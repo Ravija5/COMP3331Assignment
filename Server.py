@@ -1,7 +1,10 @@
 #coding: utf-8
+#Python version - 2.7.10
+import sys
 from socket import *
+import time
 
-serverPort = 12003
+serverPort = 12004
 serverSocket = socket(AF_INET, SOCK_STREAM)
 serverSocket.bind(('localhost', serverPort))
 serverSocket.listen(1)
@@ -13,35 +16,68 @@ creds = open("credentials.txt","r")
 credLines = creds.readlines()
 creds.close
 
-#Initialize dictionary
+#To keep a track of user and tries
 userTries = {}
+#Usernames with passwords
+userPass = {}
+#To keep a track of user status (blocked/unblocked)
+userStatus = {}
+blocked_duration = sys.argv[1]
+
 for userCreds in credLines:
     user = userCreds.split()
     userTries[user[0]] = 0
+    userPass[user[0]] = user[1]
+    userStatus[user[0]] = 0
+
+#To check if a username exists in database
+def isExists(uname):
+    for line in credLines:
+        user = line.split()
+        if(user[0] == uname):
+            return True
+            break
+    return False
     
 def authenticateUser():
     uname = connectionSocket.recv(1024)
     password = connectionSocket.recv(1024)
-    found = False
-    for line in credLines:
-        user = line.split()
 
-        if user[0] == uname:
-            found = True
-            userTries[uname] = userTries[uname] + 1
-            print userTries
-            if(user[1] == password):
+    if(isExists(uname) == False):
+        connectionSocket.send("Username does not exist")
+        return
+    
+    if(userStatus[uname] == 0):
+        #User is not blocked
+        userTries[uname] = userTries[uname] + 1
+        if(userPass[uname] == password):
+            userTries[uname] = 0
+            connectionSocket.send("Credentials authenticated")
+        else:
+            if (userTries[uname] == 3):
+                #Block user
+                connectionSocket.send("User blocked for timeout duration")
+                userStatus[uname] =  time.time()
+                return
+            connectionSocket.send("Password incorrect")
+    else:
+        #User still blocked
+        elapsedTime = time.time() - userStatus[uname]
+        print userStatus
+        print ("Elapsed time = ", elapsedTime)
+        print ("Blocked duration = ", blocked_duration)
+        if(float(elapsedTime) > float(blocked_duration)):
+            #Unblocked
+            print("Unblocked now")
+            userStatus[uname] = 0
+            if(userPass[uname] == password):
+                userTries[uname] = 0
                 connectionSocket.send("Credentials authenticated")
-                break
             else:
                 connectionSocket.send("Password incorrect")
-                if (userTries[uname] == 3):
-                    print("User blocked for timeout duration")
-                    
-
-    if found == False:
-        connectionSocket.send("Username does not exist in the database\n")
-
+        else:
+            connectionSocket.send("User blocked for timeout duration")
+            print("User still blocked")
 while 1:
     connectionSocket, addr = serverSocket.accept()
     try:
