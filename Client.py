@@ -12,20 +12,20 @@ isLogged = False
 
 def login():
     isReceived = "Password incorrect"
-    uname = raw_input('USERNAME:')
+    uname = raw_input('Username:')
     i = 0
     
     while (i < 3 and isReceived == "Password incorrect"):
         clientSocket.send(uname)
-        password = raw_input('PASSWORD:')
+        password = raw_input('Password:')
         clientSocket.send(password)
         isReceived = clientSocket.recv(1024)
 
         if isReceived == "Credentials authenticated":
-            print(isReceived)
+            print("Welcome to the greatest messaging application ever!")
             return True
         elif isReceived == "Password incorrect":
-            print ("Password is incorrect please try again")
+            print ("Invalid Password. Please try again")
         i = i + 1
     print(isReceived)
     return False

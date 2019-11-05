@@ -56,7 +56,7 @@ def authenticateUser():
         else:
             if (userTries[uname] == 3):
                 #Block user
-                connectionSocket.send("User blocked for timeout duration")
+                connectionSocket.send("Invalid Password. Your account has been blocked. Please try again later")
                 userStatus[uname] =  time.time()
                 return
             connectionSocket.send("Password incorrect")
@@ -76,7 +76,7 @@ def authenticateUser():
             else:
                 connectionSocket.send("Password incorrect")
         else:
-            connectionSocket.send("User blocked for timeout duration")
+            connectionSocket.send(">Your account is blocked due to multiple login failures. Please try again later")
             print("User still blocked")
 while 1:
     connectionSocket, addr = serverSocket.accept()
@@ -87,4 +87,5 @@ while 1:
     except IOError:
         connectionSocket.send('there was some issue with connection try again\n\n')
     finally:
+        
         connectionSocket.close()
