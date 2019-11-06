@@ -69,15 +69,21 @@ class ClientThread(Thread):
                     self.username = authResult[0]
                     self.loginTime = time.time()
                     self.loggedIn = True
-                    broadcast(self,"New user online: "+ self.username)
+                    broadcast(self,"{} logged in ".format(self.username))
                 continue
             
-            #print ("Before greater than")
-            #self.conn.send(">".encode())
             command = self.conn.recv(1024).decode()
-            if(command == "broadcast"):
-                broadcast(self,"HHELEOLEGELOO")
+            command.split()
+            if(command[0] == "broadcast"):
+                broadcast(self,"{}: {}".format(self.username, command[1]))
                 continue
+            elif(command[0] == "whoelse"):
+                for clientThread in clientThreads:
+                    if(clientThread.loggedIn == True and clientThread.username != self.username):
+                        self.conn.send(clientThread.username)
+                        print (clientThread.username)
+                continue
+           
 
         self.conn.close()
 
@@ -118,7 +124,7 @@ def server_program():
     # get the hostname
     host = "127.0.0.1"
     print("Host: " +host)
-    port = 13003  # initiate port no above 1024
+    port = 13005  # initiate port no above 1024
 
     server_socket = socket(AF_INET, SOCK_STREAM)  # get instance
     server_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
