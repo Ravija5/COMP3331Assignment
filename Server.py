@@ -4,48 +4,52 @@ from threading import Thread
 import sys
 import time
 
+
 def authenticateUser(self):
+    self.conn.send("Username:".encode())
     uname= self.conn.recv(1024).decode()
-    print("[Thread - %d] username recd: %s" %(threading.currentThread().ident, str(uname)))
-    #self.conn.send("Password:".encode())
-    #receive Password
+    print("[Thread - %d] username recd: %s" %(threading.currentThread().ident, str(uname))) 
+  
+    while (isExists(uname) == False):
+        self.conn.send("Username does not exist\nUsername")
+        uname= self.conn.recv(1024).decode()
+        print("[Thread - %d] username recd: %s" %(threading.currentThread().ident, str(uname))) 
+
+    if(userBlock[uname] != 0):
+        elapsedTime = time.time() - userBlock[uname]
+        print elapsedTime
+        if(float(elapsedTime) < float(blocked_duration)):
+            self.conn.send("Your account is blocked due to multiple login failures. Please try again later\n")
+            #TODO Disconnect user
+            return (uname, False)
+        else:
+            userBlock[uname] = 0
+            userTries[uname] = 0
+
+    #user is not blocked
+    self.conn.send("Password:".encode())
     password = self.conn.recv(1024).decode()
     print("[Thread - %d] Password recd: %s" %(threading.currentThread().ident, str(password)))
-    if(isExists(uname) == False):
-        self.conn.send("Username does not exist")
-        return
 
-    if(userStatus[uname] == 0):
-        #User is not blocked
+    while(userTries[uname] < 3):
         userTries[uname] = userTries[uname] + 1
         if(userPass[uname] == password):
             userTries[uname] = 0
-            self.conn.send("Credentials authenticated")
-        else:
-            if (userTries[uname] == 3):
-                #Block user
-                self.conn.send("Invalid Password. Your account has been blocked. Please try again later")
-                userStatus[uname] =  time.time()
-                return
-            self.conn.send("Password incorrect")
-    else:
-        #User still blocked
-        elapsedTime = time.time() - userStatus[uname]
-        print userStatus
-        print ("Elapsed time = ", elapsedTime)
-        print ("Blocked duration = ", blocked_duration)
-        if(float(elapsedTime) > float(blocked_duration)):
-            #Unblocked
-            print("Unblocked now")
-            userStatus[uname] = 0
-            if(userPass[uname] == password):
-                userTries[uname] = 0
-                self.conn.send("Credentials authenticated")
-            else:
-                self.conn.send("Password incorrect")
-        else:
-            self.conn.send("Your account is blocked due to multiple login failures. Please try again later")
-            print("User still blocked")
+            self.conn.send("Credentials authenticated\n>")
+            return (uname, True)
+        elif(userTries[uname] <= 2):
+            self.conn.send("Invalid Password\nPassword:")
+            password = self.conn.recv(1024).decode()
+            print("[Thread - %d] Password recd: %s" %(threading.currentThread().ident, str(password)))
+    
+    self.conn.send("Invalid Password. Your account has been blocked. Please try again later\n")
+    userBlock[uname] =  time.time()
+    return (uname, False)
+
+def broadcast(self, message):
+    for clientThread in clientThreads:
+        if(clientThread.loggedIn == True and clientThread.username != self.username):
+            clientThread.conn.send(message.encode())
 
 class ClientThread(Thread):
 
@@ -53,14 +57,30 @@ class ClientThread(Thread):
         Thread.__init__(self)
         self.conn = conn
         self.address = address
+        self.loggedIn = False
         print ("[Thread - %d] New socket thread started from:%s" %(threading.currentThread().ident, str(address)))
 
-    def run(self):
-        while True:
-            authenticateUser(self)
 
-        #close connection upon some condition.
-        conn.close()
+    def run(self):
+        while 1:
+            if(self.loggedIn == False):
+                authResult = authenticateUser(self)
+                if(authResult[1] == True):
+                    self.username = authResult[0]
+                    self.loginTime = time.time()
+                    self.loggedIn = True
+                    broadcast(self,"New user online: "+ self.username)
+                continue
+            
+            #print ("Before greater than")
+            #self.conn.send(">".encode())
+            command = self.conn.recv(1024).decode()
+            if(command == "broadcast"):
+                broadcast(self,"HHELEOLEGELOO")
+                continue
+
+        self.conn.close()
+
 
 #Open file 
 creds = open("credentials.txt","r")
@@ -73,18 +93,15 @@ userTries = {}
 #Usernames with passwords
 userPass = {}
 #To keep a track of user status (blocked/unblocked)
-userStatus = {}
+userBlock = {}
+clientInfo = {}
 blocked_duration = sys.argv[1]
-
 
 for userCreds in credLines:
     user = userCreds.split()
     userTries[user[0]] = 0
     userPass[user[0]] = user[1]
-    userStatus[user[0]] = 0
-# print userTries
-# print userPass
-# print userStatus
+    userBlock[user[0]] = 0
 
 #To check if a username exists in database
 def isExists(uname):
@@ -95,29 +112,26 @@ def isExists(uname):
             break
     return False
 
-threads = []
+clientThreads = []
+
 def server_program():
     # get the hostname
     host = "127.0.0.1"
     print("Host: " +host)
-    port = 13002  # initiate port no above 1024
+    port = 13003  # initiate port no above 1024
 
     server_socket = socket(AF_INET, SOCK_STREAM)  # get instance
     server_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-
-    # look closely. The bind() function takes tuple as argument
-    server_socket.bind((host, port))  # bind host address and port together
-
-    # configure how many client the server can listen simultaneously
-
+    server_socket.bind((host, port))  
+    #Store usernames and ports in a dictionary
     while True:
         server_socket.listen(20)
         conn, address = server_socket.accept()  # accept new connection
         print("Connection from: " + str(address))
-        aThread = ClientThread(conn, address).start()
-        threads.append(aThread)
-
-
+        aThread = ClientThread(conn, address)
+        aThread.start()
+        clientThreads.append(aThread)
+           
 
 if __name__ == '__main__':
     server_program()

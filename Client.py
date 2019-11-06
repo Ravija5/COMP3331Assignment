@@ -2,16 +2,14 @@ from socket import *
 
 
 def client_program():
-    # host = socket.gethostname()  # as both code is running on same pc
     host = "127.0.0.1"
-    port = 13002  # socket server port number
+    port = 13003  # socket server port number
     isLogged = False
 
     client_socket = socket(AF_INET, SOCK_STREAM)  # instantiate
     client_socket.connect((host, port))  # connect to the server
 
     print("Client starting...")
-
     
     def login(client_socket):
         isReceived = "Password incorrect"
@@ -33,34 +31,19 @@ def client_program():
         print(isReceived)
         return False
 
-    while isLogged == False:
-        isLogged = login(client_socket)
-        
-
-
-
+    # while isLogged == False:
+    #     isLogged = login(client_socket)
+    
+    # if(isLogged == True):
+    #     print ("Logged in")
+    while 1:
+        data = client_socket.recv(1024).decode()
+        print (data),
+        message = raw_input()
+        client_socket.send(message.encode())
+    
     client_socket.close()  # close the connection
 
 
 if __name__ == '__main__':
     client_program()
-
-#receive string "Username: "
-        # data = client_socket.recv(1024)
-        # print(data, " ")  # show in terminal
-        # uname = raw_input('Username:')
-        # client_socket.send(uname)
-        # password = raw_input('Password:')
-        # client_socket.send(password)
-        # #Take in UserName & send
-        # message = raw_input()  # again take input
-        # client_socket.send(message)  # send message
-
-        # #receive string "Password: "
-        # data = client_socket.recv(1024)  # receive response
-        # print(data, " ")  # show in terminal
-        # #
-
-        # #Take in Password & send
-        # message = raw_input()  # again take input
-        # client_socket.send(message)  # send message
