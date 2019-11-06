@@ -1,36 +1,66 @@
-#coding: utf-8
-#Python version - 2.7.10
 from socket import *
 
-serverName = 'localhost'
-serverPort = 12004
-clientSocket = socket(AF_INET, SOCK_STREAM)
-clientSocket.connect((serverName, serverPort))
 
-#Global Declarations
-isLogged = False
+def client_program():
+    # host = socket.gethostname()  # as both code is running on same pc
+    host = "127.0.0.1"
+    port = 13002  # socket server port number
+    isLogged = False
 
-def login():
-    isReceived = "Password incorrect"
-    uname = raw_input('Username:')
-    i = 0
+    client_socket = socket(AF_INET, SOCK_STREAM)  # instantiate
+    client_socket.connect((host, port))  # connect to the server
+
+    print("Client starting...")
+
     
-    while (i < 3 and isReceived == "Password incorrect"):
-        clientSocket.send(uname)
-        password = raw_input('Password:')
-        clientSocket.send(password)
-        isReceived = clientSocket.recv(1024)
+    def login(client_socket):
+        isReceived = "Password incorrect"
+        uname = raw_input('Username:')
+        i = 0
+        
+        while (i < 3 and isReceived == "Password incorrect"):
+            client_socket.send(uname)
+            password = raw_input('Password:')
+            client_socket.send(password)
+            isReceived = client_socket.recv(1024)
 
-        if isReceived == "Credentials authenticated":
-            print("Welcome to the greatest messaging application ever!")
-            return True
-        elif isReceived == "Password incorrect":
-            print ("Invalid Password. Please try again")
-        i = i + 1
-    print(isReceived)
-    return False
+            if isReceived == "Credentials authenticated":
+                print("Welcome to the greatest messaging application ever!")
+                return True
+            elif isReceived == "Password incorrect":
+                print ("Invalid Password. Please try again")
+            i = i + 1
+        print(isReceived)
+        return False
 
-while 1:
     while isLogged == False:
-        isLogged = login()
-  
+        isLogged = login(client_socket)
+        
+
+
+
+    client_socket.close()  # close the connection
+
+
+if __name__ == '__main__':
+    client_program()
+
+#receive string "Username: "
+        # data = client_socket.recv(1024)
+        # print(data, " ")  # show in terminal
+        # uname = raw_input('Username:')
+        # client_socket.send(uname)
+        # password = raw_input('Password:')
+        # client_socket.send(password)
+        # #Take in UserName & send
+        # message = raw_input()  # again take input
+        # client_socket.send(message)  # send message
+
+        # #receive string "Password: "
+        # data = client_socket.recv(1024)  # receive response
+        # print(data, " ")  # show in terminal
+        # #
+
+        # #Take in Password & send
+        # message = raw_input()  # again take input
+        # client_socket.send(message)  # send message
