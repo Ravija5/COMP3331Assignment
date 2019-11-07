@@ -4,6 +4,12 @@ from threading import Thread
 import sys
 import time
 
+    
+def disconnectUser(self):
+    print ("In disconnect: {} ".format(self.username))
+    self.conn.send("Bye".encode())
+    self.socketStatus = False
+    self.conn.close()
 
 def authenticateUser(self):
     self.conn.send("Username:".encode())
@@ -15,12 +21,14 @@ def authenticateUser(self):
         uname= self.conn.recv(1024).decode()
         print("[Thread - %d] username recd: %s" %(threading.currentThread().ident, str(uname))) 
 
+    self.username = uname
     if(userBlock[uname] != 0):
         elapsedTime = time.time() - userBlock[uname]
         print elapsedTime
         if(float(elapsedTime) < float(blocked_duration)):
             self.conn.send("Your account is blocked due to multiple login failures. Please try again later\n")
             #TODO Disconnect user
+            disconnectUser(self)
             return (uname, False)
         else:
             userBlock[uname] = 0
@@ -35,7 +43,7 @@ def authenticateUser(self):
         userTries[uname] = userTries[uname] + 1
         if(userPass[uname] == password):
             userTries[uname] = 0
-            self.conn.send("Credentials authenticated\n")
+            self.conn.send("Credentials authenticated\n".encode())
             return (uname, True)
         elif(userTries[uname] <= 2):
             self.conn.send("Invalid Password\nPassword:")
@@ -50,6 +58,22 @@ def broadcast(self, message):
     for clientThread in clientThreads:
         if(clientThread.loggedIn == True and clientThread.username != self.username):
             clientThread.conn.send(message.encode())
+
+def blockFrom(self, username):
+    if(isExists(username) == False):
+        self.conn.send("User does not exist in credentials\n".encode())
+    
+    if( username == self.username ):
+        self.conn.send("Cannot block self\n".encode())
+
+    #Hans said -> Block yoda => yoda has hansi n his blocked form list => output is: blocked yoda
+    for clientThread in clientThreads:
+         if(clientThread.username == username):
+            clientThread.blockedFrom.append(self.username)
+            print (clientThread.blockedFrom)
+            break
+            
+    self.conn.send("Blocked {}\n".format(username))
 
 #Need t ofigure out a way to close connections and handle thsose threads
 #Maintain a user hostory perhaps
@@ -67,15 +91,28 @@ def whoelsesince(self, givenTime):
 
 def messageUser(self, username, message):
     if(isExists(username) == False):
-        self.conn.send("User does not exist in credentials\n").encode()
+        self.conn.send("User does not exist in credentials\n".encode())
     
     if( username == self.username ):
         self.conn.send("Cannot send message to self\n".encode())
 
-    #If user is online 
+    #Checking for all users
     for clientThread in clientThreads:
         if(clientThread.username == username):
-            clientThread.conn.send("{}: {}\n".format(self.username,message ).encode())
+            if(clientThread.loggedIn == True):
+                clientThread.conn.send("{}: {}\n".format(self.username,message ).encode())
+            #else:
+                #Add to offline messages for clientThread
+
+class InactiveUserbooter(Thread):
+    def __init__(self):
+        Thread.__init__(self)
+    
+    def run(self):
+        while 1:
+            #Scroll through list of inavtiev users and disconnect them
+            time.sleep(1)
+
 
 class ClientThread(Thread):
 
@@ -84,11 +121,16 @@ class ClientThread(Thread):
         self.conn = conn
         self.address = address
         self.loggedIn = False
+        self.socketStatus = True
+        self.blockedFrom = []
+        #List of offline messages (list of strings)
         print ("[Thread - %d] New socket thread started from:%s" %(threading.currentThread().ident, str(address)))
 
 
     def run(self):
         while 1:
+            if(self.socketStatus == False):
+                return
             if(self.loggedIn == False):
                 authResult = authenticateUser(self)
                 if(authResult[1] == True):
@@ -96,9 +138,10 @@ class ClientThread(Thread):
                     self.loginTime = time.time()
                     self.loggedIn = True
                     broadcast(self,"{} logged in \n".format(self.username))
+                    #Send all offline messages and empty list
                 continue
             
-            
+            #prompt()
             command = self.conn.recv(1024).decode()
             commands = command.split()
             if(commands[0] == "broadcast"):
@@ -115,10 +158,17 @@ class ClientThread(Thread):
                     self.conn.send("{}\n".format(client.username))
                 continue
             elif(commands[0] == "message"):
-                messageUser(self, commands[1], commands[2])
+                msg = ' '.join(commands[2:])
+                messageUser(self, commands[1], msg)
+                continue
+            elif(commands[0] == "block"):
+                blockFrom(self, commands[1])
+                continue
+            else:
+                self.conn.send("Command does not exist. Try again\n")
                 continue
 
-        self.conn.close()
+        
 
 
 #Open file 
@@ -163,6 +213,9 @@ def server_program():
     server_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
     server_socket.bind((host, port))  
     #Store usernames and ports in a dictionary
+
+    InactiveUserbooter().start()
+
     while True:
         server_socket.listen(20)
         conn, address = server_socket.accept()  # accept new connection
@@ -170,7 +223,8 @@ def server_program():
         aThread = ClientThread(conn, address)
         aThread.start()
         clientThreads.append(aThread)
-           
+    
+    
 
 if __name__ == '__main__':
     server_program()
