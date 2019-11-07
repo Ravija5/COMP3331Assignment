@@ -51,6 +51,20 @@ def broadcast(self, message):
         if(clientThread.loggedIn == True and clientThread.username != self.username):
             clientThread.conn.send(message.encode())
 
+#Need t ofigure out a way to close connections and handle thsose threads
+#Maintain a user hostory perhaps
+def whoelsesince(self, givenTime):
+    print ("In whoelse since")
+    lastOnline = []
+    for clientThread in clientThreads:
+        if(clientThread.loggedIn == True and clientThread.username != self.username):
+            elapsedTime = time.time() - clientThread.loginTime 
+            print (elapsedTime)
+            if(elapsedTime < givenTime):
+                lastOnline.append(clientThread)
+
+    return lastOnline
+
 class ClientThread(Thread):
 
     def __init__(self,conn,address):
@@ -83,7 +97,11 @@ class ClientThread(Thread):
                     if(clientThread.loggedIn == True and clientThread.username != self.username):
                         self.conn.send("{}\n".format(clientThread.username))
                 continue
-           
+            elif(commands[0] == "whoelsesince"):
+                print("Calling who else sicne")
+                lastOnline = whoelsesince(self, commands[1])
+                for client in lastOnline:
+                    self.conn.send("{}\n".format(client.username))
 
         self.conn.close()
 
