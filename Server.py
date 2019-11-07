@@ -65,6 +65,18 @@ def whoelsesince(self, givenTime):
 
     return lastOnline
 
+def messageUser(self, username, message):
+    if(isExists(username) == False):
+        self.conn.send("User does not exist in credentials\n").encode()
+    
+    if( username == self.username ):
+        self.conn.send("Cannot send message to self\n".encode())
+
+    #If user is online 
+    for clientThread in clientThreads:
+        if(clientThread.username == username):
+            clientThread.conn.send("{}: {}\n".format(self.username,message ).encode())
+
 class ClientThread(Thread):
 
     def __init__(self,conn,address):
@@ -98,10 +110,13 @@ class ClientThread(Thread):
                         self.conn.send("{}\n".format(clientThread.username))
                 continue
             elif(commands[0] == "whoelsesince"):
-                print("Calling who else sicne")
                 lastOnline = whoelsesince(self, commands[1])
                 for client in lastOnline:
                     self.conn.send("{}\n".format(client.username))
+                continue
+            elif(commands[0] == "message"):
+                messageUser(self, commands[1], commands[2])
+                continue
 
         self.conn.close()
 
