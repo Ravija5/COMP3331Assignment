@@ -2,11 +2,18 @@ from socket import *
 import select
 import sys
 
+showPrompt = False
+
 def prompt():
-    sys.stdout.write(">")
-    sys.stdout.flush()
-    
+    if(showPrompt == True):
+        sys.stdout.write(">")
+        sys.stdout.flush()
+    else:
+        sys.stdout.write("")
+        sys.stdout.flush()
+
 def client_program():
+ 
     host = "127.0.0.1"
     port = 13005  # socket server port number
     isLogged = False
@@ -18,6 +25,8 @@ def client_program():
     print("Client starting...")
 
     while 1:
+        global showPrompt
+
         socket_list = [sys.stdin, client_socket]
         read_sockets, write_sockets, error_sockets = select.select(socket_list, [], [])
     
@@ -25,6 +34,8 @@ def client_program():
             if sock == client_socket:
                 data = client_socket.recv(1024).decode()
                 print (data),
+                if(data.encode() == ("Credentials authenticated\n")):
+                    showPrompt = True
                 prompt()
             else:
                 message = raw_input()
