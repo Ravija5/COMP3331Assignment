@@ -35,7 +35,7 @@ def authenticateUser(self):
         userTries[uname] = userTries[uname] + 1
         if(userPass[uname] == password):
             userTries[uname] = 0
-            self.conn.send("Credentials authenticated\n>")
+            self.conn.send("Credentials authenticated\n")
             return (uname, True)
         elif(userTries[uname] <= 2):
             self.conn.send("Invalid Password\nPassword:")
@@ -69,19 +69,19 @@ class ClientThread(Thread):
                     self.username = authResult[0]
                     self.loginTime = time.time()
                     self.loggedIn = True
-                    broadcast(self,"{} logged in ".format(self.username))
+                    broadcast(self,"{} logged in \n".format(self.username))
                 continue
             
+            
             command = self.conn.recv(1024).decode()
-            command.split()
-            if(command[0] == "broadcast"):
-                broadcast(self,"{}: {}".format(self.username, command[1]))
+            commands = command.split()
+            if(commands[0] == "broadcast"):
+                broadcast(self,"{}: {}\n".format(self.username, commands[1]))
                 continue
-            elif(command[0] == "whoelse"):
+            elif(commands[0] == "whoelse"):
                 for clientThread in clientThreads:
                     if(clientThread.loggedIn == True and clientThread.username != self.username):
-                        self.conn.send(clientThread.username)
-                        print (clientThread.username)
+                        self.conn.send("{}\n".format(clientThread.username))
                 continue
            
 
