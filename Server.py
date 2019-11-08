@@ -21,7 +21,8 @@ def authenticateUser(self):
         uname= self.conn.recv(1024).decode()
         print("[Thread - %d] username recd: %s" %(threading.currentThread().ident, str(uname))) 
 
-    self.username = uname
+    print("Adding uname to thread", uname.encode())
+    self.username = uname.encode()
     if(userBlock[uname] != 0):
         elapsedTime = time.time() - userBlock[uname]
         print elapsedTime
@@ -60,20 +61,52 @@ def broadcast(self, message):
             clientThread.conn.send(message.encode())
 
 def blockFrom(self, username):
+    print("Checkking for : {}".format(username))
     if(isExists(username) == False):
         self.conn.send("User does not exist in credentials\n".encode())
-    
+        return
+
     if( username == self.username ):
         self.conn.send("Cannot block self\n".encode())
+        return 
 
     #Hans said -> Block yoda => yoda has hansi n his blocked form list => output is: blocked yoda
     for clientThread in clientThreads:
-         if(clientThread.username == username):
-            clientThread.blockedFrom.append(self.username)
-            print (clientThread.blockedFrom)
+        #Proabbly an encoding decoding issue
+        
+        if((clientThread.username == username)):      
+            print(clientThread.username)
+            print(username)      
+            if (self.username not in clientThread.blockedFrom):
+                clientThread.blockedFrom.append(self.username.encode())
+                #print (clientThread.blockedFrom)
+            else:
+                self.conn.send("User is already blocked\n".encode())
+                return
             break
             
     self.conn.send("Blocked {}\n".format(username))
+
+def unblockFrom(self, username):
+    if(isExists(username) == False):
+        self.conn.send("User does not exist in credentials\n".encode())
+        return 
+        
+    if( username == self.username ):
+        self.conn.send("Cannot unblock self\n".encode())
+        return 
+
+    #hans says unblock yoda => remove hans from yoda's block from list
+    for clientThread in clientThreads:
+         if(clientThread.username == username):
+            try:
+                clientThread.blockedFrom.remove(self.username)
+                print (clientThread.blockedFrom)
+                break
+            except ValueError:
+                self.conn.send("User is already unblocked. No action required\n".encode())
+
+    self.conn.send("Unblocked {}\n".format(username))
 
 #Need t ofigure out a way to close connections and handle thsose threads
 #Maintain a user hostory perhaps
@@ -164,6 +197,9 @@ class ClientThread(Thread):
             elif(commands[0] == "block"):
                 blockFrom(self, commands[1])
                 continue
+            elif(commands[0] == "unblock"):
+                unblockFrom(self, commands[1])
+                continue
             else:
                 self.conn.send("Command does not exist. Try again\n")
                 continue
@@ -207,7 +243,7 @@ def server_program():
     # get the hostname
     host = "127.0.0.1"
     print("Host: " +host)
-    port = 13005  # initiate port no above 1024
+    port = 13007  # initiate port no above 1024
 
     server_socket = socket(AF_INET, SOCK_STREAM)  # get instance
     server_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
@@ -228,3 +264,4 @@ def server_program():
 
 if __name__ == '__main__':
     server_program()
+#clientThread.blockedFrom =  ([str(clientThread.blockedFrom[x]) for x in range(len(clientThread.blockedFrom))])
