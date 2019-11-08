@@ -15,7 +15,7 @@ def prompt():
 def client_program():
  
     host = "127.0.0.1"
-    port = 13005  # socket server port number
+    port = 13007  # socket server port number
     isLogged = False
 
     client_socket = socket(AF_INET, SOCK_STREAM)  # instantiate
@@ -33,9 +33,18 @@ def client_program():
         for sock in read_sockets:
             if sock == client_socket:
                 data = client_socket.recv(1024).decode()
+
                 print (data),
+                
                 if(data.encode() == ("Credentials authenticated\n")):
+                    print("prompt set to true")
                     showPrompt = True
+        
+                if(data.startswith("Bye")):
+                    print("Disconnecting")
+                    client_socket.close()
+                    return
+
                 prompt()
             else:
                 message = raw_input()

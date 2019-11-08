@@ -7,7 +7,7 @@ import time
     
 def disconnectUser(self):
     print ("In disconnect: {} ".format(self.username))
-    self.conn.send("Bye".encode())
+    self.conn.send("Bye\n".encode())
     self.socketStatus = False
     self.conn.close()
 
@@ -229,8 +229,8 @@ class ClientThread(Thread):
                 continue
             elif(commands[0] == "logout"):
                 self.loggedIn = False
-                self.conn.send("Logging out...\n".encode())
-                #disconnectUser(self)
+                #self.conn.send("Logging out...\n".encode())
+                disconnectUser(self)
                 continue
             else:
                 self.conn.send("Command does not exist. Try again\n")
