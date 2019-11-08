@@ -55,8 +55,11 @@ def authenticateUser(self):
     return (uname, False)
 
 def broadcast(self, message):
+    if(len(self.blockedFrom) != 0):
+        self.conn.send("Your message could not be delivered to some recipients\n".encode())
+
     for clientThread in clientThreads:
-        if(clientThread.loggedIn == True and clientThread.username != self.username):
+        if(clientThread.loggedIn == True and clientThread.username != self.username and clientThread.username not in self.blockedFrom):
             clientThread.conn.send(message.encode())
 
 def blockFrom(self, username):
@@ -191,7 +194,8 @@ class ClientThread(Thread):
             command = self.conn.recv(1024).decode()
             commands = command.split()
             if(commands[0] == "broadcast"):
-                broadcast(self,"{}: {}\n".format(self.username, commands[1]))
+                msg = ' '.join(commands[1:])
+                broadcast(self,"{}: {}\n".format(self.username, msg))
                 continue
             elif(commands[0] == "whoelse"):
                 for clientThread in clientThreads:
