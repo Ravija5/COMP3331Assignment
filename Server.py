@@ -21,8 +21,7 @@ def authenticateUser(self):
         uname= self.conn.recv(1024).decode()
         print("[Thread - %d] username recd: %s" %(threading.currentThread().ident, str(uname))) 
 
-    print("Adding uname to thread", uname.encode())
-    self.username = uname.encode()
+    self.username = uname
     if(userBlock[uname] != 0):
         elapsedTime = time.time() - userBlock[uname]
         print elapsedTime
@@ -108,8 +107,6 @@ def unblockFrom(self, username):
 
     self.conn.send("Unblocked {}\n".format(username))
 
-#Need t ofigure out a way to close connections and handle thsose threads
-#Maintain a user hostory perhaps
 def whoelsesince(self, givenTime):
     print ("In whoelse since")
     lastOnline = []
@@ -121,6 +118,15 @@ def whoelsesince(self, givenTime):
                 lastOnline.append(clientThread)
 
     return lastOnline
+
+def sendOfflineMessages(self):
+    if(len(self.offlineMsgs) == 0):
+        self.conn.send("You received no offline messages\n".encode())
+        return
+
+    self.conn.send("Your offline messages are:\n".encode())
+    for msg in self.offlineMsgs:
+        self.conn.send("{}\n".format(msg))
 
 def messageUser(self, username, message):
     if(isExists(username) == False):
@@ -134,8 +140,9 @@ def messageUser(self, username, message):
         if(clientThread.username == username):
             if(clientThread.loggedIn == True):
                 clientThread.conn.send("{}: {}\n".format(self.username,message ).encode())
-            #else:
+            else:
                 #Add to offline messages for clientThread
+                clientThread.offlineMsgs.append(message)
 
 class InactiveUserbooter(Thread):
     def __init__(self):
@@ -156,7 +163,7 @@ class ClientThread(Thread):
         self.loggedIn = False
         self.socketStatus = True
         self.blockedFrom = []
-        #List of offline messages (list of strings)
+        self.offlineMsgs = []
         print ("[Thread - %d] New socket thread started from:%s" %(threading.currentThread().ident, str(address)))
 
 
@@ -172,6 +179,7 @@ class ClientThread(Thread):
                     self.loggedIn = True
                     broadcast(self,"{} logged in \n".format(self.username))
                     #Send all offline messages and empty list
+                    sendOfflineMessages(self)
                 continue
             
             #prompt()
@@ -199,6 +207,11 @@ class ClientThread(Thread):
                 continue
             elif(commands[0] == "unblock"):
                 unblockFrom(self, commands[1])
+                continue
+            elif(commands[0] == "logout"):
+                self.loggedIn = False
+                self.conn.send("Logging out...\n".encode())
+                #disconnectUser(self)
                 continue
             else:
                 self.conn.send("Command does not exist. Try again\n")
