@@ -135,6 +135,10 @@ def messageUser(self, username, message):
     if( username == self.username ):
         self.conn.send("Cannot send message to self\n".encode())
 
+    if(username in self.blockedFrom):
+        self.conn.send("You cannot message {} as you have been blocked by them\n".format(username).encode())
+        return
+
     #Checking for all users
     for clientThread in clientThreads:
         if(clientThread.username == username):
