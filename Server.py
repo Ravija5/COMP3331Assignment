@@ -114,23 +114,29 @@ def whoelsesince(self, givenTime):
     print ("In whoelse since")
     lastOnline = []
     for clientThread in clientThreads:
-        if(clientThread.loggedIn == True and clientThread.username != self.username):
+        if(clientThread.username != self.username):
+            print("{} logged in at {}\n".format(clientThread.username,clientThread.loginTime ))
             elapsedTime = time.time() - clientThread.loginTime 
-            print (elapsedTime)
+            #print (elapsedTime)
+            print("Elasped time = {}".format(elapsedTime))
             if(elapsedTime < givenTime):
                 lastOnline.append(clientThread)
 
     return lastOnline
 
 def sendOfflineMessages(self):
-    if(len(self.offlineMsgs) == 0):
-        self.conn.send("You received no offline messages\n".encode())
-        return
 
+    offline = []
+    if(len(self.offlineMsgs) == 0):
+        #self.conn.send("You received no offline messages\n".encode())
+        return offline
+    
     self.conn.send("Your offline messages are:\n".encode())
     for msg in self.offlineMsgs:
-        self.conn.send("{}\n".format(msg))
+        offline.append(msg)
+        #self.conn.send("{}\n".format(msg))
     self.offlineMsgs = []
+    return offline
     
 def messageUser(self, username, message):
     if(isExists(username) == False):
@@ -186,7 +192,11 @@ class ClientThread(Thread):
                     self.loginTime = time.time()
                     self.loggedIn = True
                     broadcast(self,"{} logged in \n".format(self.username))
-                    #sendOfflineMessages(self)
+                    offline = sendOfflineMessages(self)
+                    if(len(offline) == 0):
+                        self.conn.send("You received no offline messages\n".encode())
+                    for msg in offline:
+                        self.conn.send("{}\n".format(msg).encode())
 
                 continue
             
