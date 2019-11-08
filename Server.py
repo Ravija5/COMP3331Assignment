@@ -127,7 +127,8 @@ def sendOfflineMessages(self):
     self.conn.send("Your offline messages are:\n".encode())
     for msg in self.offlineMsgs:
         self.conn.send("{}\n".format(msg))
-
+    self.offlineMsgs = []
+    
 def messageUser(self, username, message):
     if(isExists(username) == False):
         self.conn.send("User does not exist in credentials\n".encode())
@@ -182,8 +183,8 @@ class ClientThread(Thread):
                     self.loginTime = time.time()
                     self.loggedIn = True
                     broadcast(self,"{} logged in \n".format(self.username))
-                    #Send all offline messages and empty list
-                    sendOfflineMessages(self)
+                    #sendOfflineMessages(self)
+
                 continue
             
             #prompt()
