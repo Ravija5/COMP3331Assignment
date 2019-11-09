@@ -17,7 +17,7 @@ def authenticateUser(self):
     print("[Thread - %d] username recd: %s" %(threading.currentThread().ident, str(uname))) 
   
     while (isExists(uname) == False):
-        self.conn.send("Username does not exist\nUsername")
+        self.conn.send("Username does not exist\nUsername:")
         uname= self.conn.recv(1024).decode()
         print("[Thread - %d] username recd: %s" %(threading.currentThread().ident, str(uname))) 
 
@@ -27,7 +27,6 @@ def authenticateUser(self):
         print elapsedTime
         if(float(elapsedTime) < float(blocked_duration)):
             self.conn.send("Your account is blocked due to multiple login failures. Please try again later\n")
-            #TODO Disconnect user
             disconnectUser(self)
             return (uname, False)
         else:
@@ -52,6 +51,7 @@ def authenticateUser(self):
     
     self.conn.send("Invalid Password. Your account has been blocked. Please try again later\n")
     userBlock[uname] =  time.time()
+    disconnectUser(self)
     return (uname, False)
 
 def broadcast(self, message):
@@ -158,13 +158,14 @@ def messageUser(self, username, message):
                 #Add to offline messages for clientThread
                 clientThread.offlineMsgs.append(message)
 
-class InactiveUserbooter(Thread):
+class InactiveUserBooter(Thread):
     def __init__(self):
         Thread.__init__(self)
     
     def run(self):
         while 1:
             #Scroll through list of inavtiev users and disconnect them
+            
             time.sleep(1)
 
 
@@ -229,7 +230,6 @@ class ClientThread(Thread):
                 continue
             elif(commands[0] == "logout"):
                 self.loggedIn = False
-                #self.conn.send("Logging out...\n".encode())
                 disconnectUser(self)
                 continue
             else:
@@ -282,7 +282,7 @@ def server_program():
     server_socket.bind((host, port))  
     #Store usernames and ports in a dictionary
 
-    InactiveUserbooter().start()
+    InactiveUserBooter().start()
 
     while True:
         server_socket.listen(20)
