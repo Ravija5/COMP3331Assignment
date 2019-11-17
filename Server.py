@@ -184,6 +184,40 @@ class InactiveUserBooter(Thread):
             time.sleep(1)
 
 
+def openp2p(self, to_user):
+
+    if (isExists(to_user) == False):
+        self.conn.send("User does not exist.\n".encode())
+        return
+
+    toClientThread = None
+    for clientThread in clientThreads:
+        if (clientThread.username == to_user):
+            toClientThread = clientThread
+            break
+
+    if (toClientThread == None):
+        self.conn.send("User is not logged in.\n".encode())
+        return
+
+    if (toClientThread.loggedIn == False):
+        self.conn.send("User is not logged in.\n".encode())
+        return
+
+    if (toClientThread.username == self.username):
+        self.conn.send("User is same as you.\n".encode())
+        return
+
+    if (toClientThread.username in self.blockedFrom):
+        self.conn.send("You are blocked by this user.\n".encode())
+        return
+
+    #P2PREQUEST b a
+    message = "P2PREQUEST {} {}".format(self.username, to_user)
+    print("Sending message: " + message)
+    toClientThread.conn.send(message.encode())
+
+
 class ClientThread(Thread):
 
     def __init__(self,conn,address):
@@ -249,6 +283,10 @@ class ClientThread(Thread):
                 elif(commands[0] == "logout"):
                     self.loggedIn = False
                     disconnectUser(self)
+                    continue
+                elif (commands[0] == "startprivate"):
+                    #startprivate a
+                    openp2p(self, commands[1])
                     continue
                 else:
                     self.conn.send("Command does not exist. Try again\n")
