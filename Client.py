@@ -48,6 +48,7 @@ class P2P_Thread(Thread):
             self.sending_socket = self.my_socket
             eventloop(self.my_socket)
             terminate(self.my_socket)
+        removeuser(self.username)
 
 
 def eventloop(client_socket):
@@ -68,14 +69,6 @@ def eventloop(client_socket):
                     return
 
                 prompt()
-                # else:
-                #     message = raw_input()
-                #     if message.startswith("X"):
-                #         client_socket.sendall(message.encode())
-                #     if message.startswith("Bye"):
-                #         client_socket.sendall(message.encode())
-                #         terminate(client_socket, server_socket)
-
 
 def terminateBoth(server_socket, client_socket):
     client_socket.shutdown(1)
@@ -84,8 +77,11 @@ def terminateBoth(server_socket, client_socket):
 
 
 def terminate(client_socket):
-    client_socket.shutdown(1)
-    client_socket.close()
+    try:
+        client_socket.shutdown(1)
+        client_socket.close()
+    except Exception as ex:
+        print ("Client socket already closed")
 
 
 def sendprivatemessage(to, data):
@@ -119,6 +115,9 @@ def sayBye(to):
     sendprivatemessage(to, "BYE")
     removeuser(to)
 
+def disconnectAllP2P():
+    for aThread in p2p_list:
+        sayBye(aThread.username)
 
 def client_program():
     port = 13007  # socket server port number
@@ -178,6 +177,8 @@ def client_program():
                 if (data.startswith("Bye")):
                     print("Disconnecting")
                     client_socket.close()
+                    #Close all P2P
+                    disconnectAllP2P()
                     return
 
                 prompt()
@@ -186,12 +187,15 @@ def client_program():
                 if (message.startswith("private")):
                     # private a Hello, How are you?
                     parts = message.split(" ", 2)
-                    to = parts[1]
-                    data = parts[2]
-                    sendprivatemessage(to, data)
+                    if len(parts) <=2:
+                        print("Usage: private <user> <message>")
+                    else:
+                        to = parts[1]
+                        data = parts[2]
+                        sendprivatemessage(to, data)
                 elif (message.startswith("stopprivate")):
                     # stopprivate a
-                    to = message.split()
+                    parts = message.split()
                     to = parts[1]
                     sayBye(to)
                 else:
