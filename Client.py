@@ -36,6 +36,7 @@ class P2P_Thread(Thread):
             client_socket, addr = self.my_socket.accept()  # Establish connection with client.
             self.client_socket = client_socket
             self.addr = addr
+            self.sending_socket = client_socket
             print("Socket work done...")
             eventloop(self.client_socket)
             terminate(self.my_socket, self.client_socket)
@@ -43,6 +44,7 @@ class P2P_Thread(Thread):
             print("Connecting to Peer...")
             self.my_socket.connect((self.ip, int(self.port)))
             print("Socket work done...")
+            self.sending_socket = self.my_socket
             eventloop(self.my_socket)
             terminate(self.my_socket)
 
@@ -83,6 +85,17 @@ def terminate(client_socket):
         client_socket.close()
 
 
+def sendprivatemessage(to, data):
+    toP2PThread = None
+    for aThread in p2p_list:
+        if (aThread.username == to):
+            toP2PThread = aThread
+            break
+    if(toP2PThread == None):
+        print("User {} not found".format(to))
+        return
+
+    toP2PThread.sending_socket.sendall(data.encode())
 
 def client_program():
     port = 13007  # socket server port number
@@ -147,7 +160,16 @@ def client_program():
                 prompt()
             else:
                 message = raw_input()
-                client_socket.send(message.encode())
+                if(message.startswith("private")):
+                    #private a Hello, How are you?
+                    parts = message.split(" ", 2)
+                    to = parts[1]
+                    data = parts[2]
+                    sendprivatemessage(to, data)
+
+                else:
+                    client_socket.send(message.encode())
+
                 prompt()
 
     client_socket.close()  # close the connection
