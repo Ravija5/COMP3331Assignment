@@ -95,7 +95,7 @@ def sendprivatemessage(to, data):
             toP2PThread = aThread
             break
     if (toP2PThread == None):
-        print("User {} not found".format(to))
+        print("Try `startprivate {}` command first.".format(to))
         return
 
     toP2PThread.sending_socket.sendall(data.encode())
