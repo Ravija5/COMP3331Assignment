@@ -18,15 +18,16 @@ def prompt():
         sys.stdout.flush()
 
 class P2P_Thread(Thread):
-    def __init__(self, my_socket, username, port, starts_socket):
+    def __init__(self, my_socket, username, ip, port, starts_socket):
         Thread.__init__(self)
         self.my_socket = my_socket
         self.username = username
+        self.ip = ip
         self.port = port
         self.starts_socket = starts_socket
 
         self.daemon = True
-        self.socketStatus = False
+        # self.socketStatus = False
         self.byeFlag = False
 
     def run(self):
@@ -35,17 +36,17 @@ class P2P_Thread(Thread):
             client_socket, addr = self.my_socket.accept()  # Establish connection with client.
             self.client_socket = client_socket
             self.addr = addr
+            print("Socket work done...")
+            eventloop(self.client_socket)
+            terminate(self.my_socket, self.client_socket)
         else:
-            # TBD TEST
             print("Connecting to Peer...")
-            # self.my_socket.connect((HOST, self.port))
+            self.my_socket.connect((self.ip, int(self.port)))
+            print("Socket work done...")
+            eventloop(self.my_socket)
+            terminate(self.my_socket)
 
-        print("Socket work done...")
-        self.socketStatus = True
-        eventloop(self.my_socket, client_socket)
-
-
-def eventloop(server_socket, client_socket):
+def eventloop(client_socket):
     while 1:
         try:
             socket_list = [client_socket]
@@ -59,7 +60,7 @@ def eventloop(server_socket, client_socket):
                 print(data)
                 if (data.startswith("Bye")):
                     print("Disconnecting.")
-                    terminate(client_socket, server_socket)
+
                     return
 
                 prompt()
@@ -72,10 +73,14 @@ def eventloop(server_socket, client_socket):
                 #         terminate(client_socket, server_socket)
 
 
-def terminate(client_socket, server_socket):
+def terminate(server_socket, client_socket):
     client_socket.shutdown(1)
     client_socket.close()
     server_socket.close()
+
+def terminate(client_socket):
+        client_socket.shutdown(1)
+        client_socket.close()
 
 
 
@@ -114,13 +119,25 @@ def client_program():
                     s.listen(2)  # Now wait for client connection.
                     fromuser = data.split()[1]
                     touser = data.split()[2]
-                    aThread = P2P_Thread(s, fromuser, port, True)
+                    aThread = P2P_Thread(s, fromuser, None, None, True)
                     p2p_list.append(aThread)
                     aThread.start()
                     #P2PPORT b a 55001
                     message = "P2PPORT {} {} {}".format(fromuser, touser, port)
                     print("Sending message to server: " + message)
                     client_socket.send(message.encode())
+
+                if (data.startswith("P2PACCEPTED")):
+                    # P2PACCEPTED b a 127.0.0.1 55001
+                    fromuser = data.split()[1]
+                    touser = data.split()[2]
+                    ip = data.split()[3]
+                    port = data.split()[4]
+                    s = socket(AF_INET, SOCK_STREAM)
+                    print("Socket created")
+                    aThread = P2P_Thread(s, touser, ip, port, False)
+                    p2p_list.append(aThread)
+                    aThread.start()
 
                 if (data.startswith("Bye")):
                     print("Disconnecting")
