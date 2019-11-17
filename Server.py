@@ -217,6 +217,19 @@ def openp2p(self, to_user):
     print("Sending message: " + message)
     toClientThread.conn.send(message.encode())
 
+def sendback_port(self, fromuser, touser, ip, port):
+    #P2PPORT b a IP 55001
+    toClientThread = None
+    for clientThread in clientThreads:
+        if (clientThread.username == fromuser):
+            toClientThread = clientThread
+            break
+    if(toClientThread == None):
+        print("User {} not found".format(fromuser))
+        return
+    message = "P2PACCEPTED {} {} {} {}".format(fromuser, touser, ip, port)
+    print("Sending message: " + message)
+    toClientThread.conn.send(message.encode())
 
 class ClientThread(Thread):
 
@@ -287,6 +300,11 @@ class ClientThread(Thread):
                 elif (commands[0] == "startprivate"):
                     #startprivate a
                     openp2p(self, commands[1])
+                    continue
+                elif (commands[0] == "P2PPORT"):
+                    # P2PPORT b a 55001
+                    print(commands)
+                    sendback_port(self, commands[1], commands[2], self.address[0], commands[3])
                     continue
                 else:
                     self.conn.send("Command does not exist. Try again\n")

@@ -117,6 +117,7 @@ def client_program():
                     aThread = P2P_Thread(s, fromuser, port, True)
                     p2p_list.append(aThread)
                     aThread.start()
+                    #P2PPORT b a 55001
                     message = "P2PPORT {} {} {}".format(fromuser, touser, port)
                     print("Sending message to server: " + message)
                     client_socket.send(message.encode())
