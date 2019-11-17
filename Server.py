@@ -309,6 +309,7 @@ def runthread(self):
                 continue
             elif (commands[0] == "logout"):
                 self.loggedIn = False
+                broadcast(self, "{} logged out\n".format(self.username))
                 break
             elif (commands[0] == "startprivate"):
                 # startprivate a
