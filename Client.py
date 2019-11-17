@@ -37,13 +37,13 @@ class P2P_Thread(Thread):
             self.client_socket = client_socket
             self.addr = addr
             self.sending_socket = client_socket
-            print("Socket work done...")
+            print("P2P establisbed with {}".format(self.username))
             eventloop(self.client_socket)
-            terminate(self.my_socket, self.client_socket)
+            terminateBoth(self.my_socket, self.client_socket)
         else:
             print("Connecting to Peer...")
             self.my_socket.connect((self.ip, int(self.port)))
-            print("Socket work done...")
+            print("P2P establisbed with {}".format(self.username))
             self.sending_socket = self.my_socket
             eventloop(self.my_socket)
             terminate(self.my_socket)
@@ -60,9 +60,9 @@ def eventloop(client_socket):
             if sock == client_socket:
                 data = client_socket.recv(1024).decode()
                 print(data)
-                if (data.startswith("Bye")):
+                if (data.startswith("BYE")):
+                    client_socket.sendall("BYE".encode()) #Say BYE to remote.
                     print("Disconnecting.")
-
                     return
 
                 prompt()
@@ -75,7 +75,7 @@ def eventloop(client_socket):
                 #         terminate(client_socket, server_socket)
 
 
-def terminate(server_socket, client_socket):
+def terminateBoth(server_socket, client_socket):
     client_socket.shutdown(1)
     client_socket.close()
     server_socket.close()
@@ -96,6 +96,25 @@ def sendprivatemessage(to, data):
         return
 
     toP2PThread.sending_socket.sendall(data.encode())
+
+def removeuser(name):
+    toP2PThread = None
+    for aThread in p2p_list:
+        if (aThread.username == name):
+            toP2PThread = aThread
+            break
+
+    if (toP2PThread == None):
+        print("User {} not found. Could not be removed.".format(name))
+    else:
+        p2p_list.remove(toP2PThread)
+        print("User {} removed.".format(name))
+
+
+
+def sayBye(to):
+    sendprivatemessage(to, "BYE")
+    removeuser(to)
 
 def client_program():
     port = 13007  # socket server port number
@@ -166,7 +185,11 @@ def client_program():
                     to = parts[1]
                     data = parts[2]
                     sendprivatemessage(to, data)
-
+                elif(message.startswith("stopprivate")):
+                    #stopprivate a
+                    to = message.split()
+                    to = parts[1]
+                    sayBye(to)
                 else:
                     client_socket.send(message.encode())
 
