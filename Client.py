@@ -17,6 +17,7 @@ def prompt():
         sys.stdout.write("")
         sys.stdout.flush()
 
+
 class P2P_Thread(Thread):
     def __init__(self, my_socket, username, ip, port, starts_socket):
         Thread.__init__(self)
@@ -48,6 +49,7 @@ class P2P_Thread(Thread):
             eventloop(self.my_socket)
             terminate(self.my_socket)
 
+
 def eventloop(client_socket):
     while 1:
         try:
@@ -61,7 +63,7 @@ def eventloop(client_socket):
                 data = client_socket.recv(1024).decode()
                 print(data)
                 if (data.startswith("BYE")):
-                    client_socket.sendall("BYE".encode()) #Say BYE to remote.
+                    client_socket.sendall("BYE".encode())  # Say BYE to remote.
                     print("Disconnecting.")
                     return
 
@@ -80,9 +82,10 @@ def terminateBoth(server_socket, client_socket):
     client_socket.close()
     server_socket.close()
 
+
 def terminate(client_socket):
-        client_socket.shutdown(1)
-        client_socket.close()
+    client_socket.shutdown(1)
+    client_socket.close()
 
 
 def sendprivatemessage(to, data):
@@ -91,11 +94,12 @@ def sendprivatemessage(to, data):
         if (aThread.username == to):
             toP2PThread = aThread
             break
-    if(toP2PThread == None):
+    if (toP2PThread == None):
         print("User {} not found".format(to))
         return
 
     toP2PThread.sending_socket.sendall(data.encode())
+
 
 def removeuser(name):
     toP2PThread = None
@@ -111,10 +115,10 @@ def removeuser(name):
         print("User {} removed.".format(name))
 
 
-
 def sayBye(to):
     sendprivatemessage(to, "BYE")
     removeuser(to)
+
 
 def client_program():
     port = 13007  # socket server port number
@@ -154,7 +158,7 @@ def client_program():
                     aThread = P2P_Thread(s, fromuser, None, None, True)
                     p2p_list.append(aThread)
                     aThread.start()
-                    #P2PPORT b a 55001
+                    # P2PPORT b a 55001
                     message = "P2PPORT {} {} {}".format(fromuser, touser, port)
                     print("Sending message to server: " + message)
                     client_socket.send(message.encode())
@@ -179,14 +183,14 @@ def client_program():
                 prompt()
             else:
                 message = raw_input()
-                if(message.startswith("private")):
-                    #private a Hello, How are you?
+                if (message.startswith("private")):
+                    # private a Hello, How are you?
                     parts = message.split(" ", 2)
                     to = parts[1]
                     data = parts[2]
                     sendprivatemessage(to, data)
-                elif(message.startswith("stopprivate")):
-                    #stopprivate a
+                elif (message.startswith("stopprivate")):
+                    # stopprivate a
                     to = message.split()
                     to = parts[1]
                     sayBye(to)
@@ -200,4 +204,3 @@ def client_program():
 
 if __name__ == '__main__':
     client_program()
-
