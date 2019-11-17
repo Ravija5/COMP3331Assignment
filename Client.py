@@ -104,11 +104,8 @@ def removeuser(name):
             toP2PThread = aThread
             break
 
-    if (toP2PThread == None):
-        print("User {} not found. Could not be removed.".format(name))
-    else:
+    if (toP2PThread != None):
         p2p_list.remove(toP2PThread)
-        print("User {} removed.".format(name))
 
 
 def sayBye(to):
