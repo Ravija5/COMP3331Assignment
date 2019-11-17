@@ -1,10 +1,10 @@
+from random import randint
 from socket import *
 import select
 import sys
 from threading import Thread
 
 showPrompt = False
-p2p_ports_start = 55000
 p2p_list = []
 HOST = "127.0.0.1"
 
@@ -146,7 +146,7 @@ def client_program():
                     # P2PREQUEST b a
                     s = socket(AF_INET, SOCK_STREAM)
                     host = ''
-                    port = p2p_ports_start + 1
+                    port = randint(10000, 63000)
                     s.bind((HOST, port))
                     s.listen(2)  # Now wait for client connection.
                     fromuser = data.split()[1]
