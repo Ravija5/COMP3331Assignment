@@ -12,7 +12,6 @@ def disconnectUser(self):
     time.sleep(1)
     self.conn.close()
 
-
 def authenticateUser(self):
     self.conn.send("Username:".encode())
     uname = self.conn.recv(1024).decode()
@@ -26,13 +25,30 @@ def authenticateUser(self):
         print("[Thread - %d] username recd: %s" % (threading.currentThread().ident, str(uname)))
 
     self.username = uname
+
+    #Figure out if this client exists. If so, update the one obtained.
+    client = None
+    for aClient in client_list:
+        if aClient.username == uname:
+            client = aClient
+            break
+    if client is not None:
+        #Client exists.
+        client.lastActivityTime = self.lastActivityTime
+        client.conn = self.conn
+        client.address = self.address
+        self = client
+    else:
+        #New client.
+        client_list.append(self)
+
     if (userBlock[uname] != 0):
         elapsedTime = time.time() - userBlock[uname]
         print elapsedTime
         if (float(elapsedTime) < float(BLOCKED_DURATION)):
             self.conn.send("Your account is blocked due to multiple login failures. Please try again later\n")
             disconnectUser(self)
-            return (uname, False)
+            return (uname, False, self)
         else:
             userBlock[uname] = 0
             userTries[uname] = 0
@@ -40,6 +56,7 @@ def authenticateUser(self):
     # user is not blocked
     self.conn.send("Password:".encode())
     password = self.conn.recv(1024).decode()
+
     self.lastActivityTime = time.time()
     print("[Thread - %d] Password recd: %s" % (threading.currentThread().ident, str(password)))
 
@@ -48,7 +65,7 @@ def authenticateUser(self):
         if (userPass[uname] == password):
             userTries[uname] = 0
             self.conn.send("Credentials authenticated\n".encode())
-            return (uname, True)
+            return (uname, True, self)
         elif (userTries[uname] <= 2):
             self.conn.send("Invalid Password\nPassword:")
             password = self.conn.recv(1024).decode()
@@ -58,7 +75,7 @@ def authenticateUser(self):
     self.conn.send("Invalid Password. Your account has been blocked. Please try again later\n")
     userBlock[uname] = time.time()
     disconnectUser(self)
-    return (uname, False)
+    return (uname, False, self)
 
 
 def broadcast(self, message):
@@ -246,10 +263,12 @@ def runthread(self):
                 return
             if (self.loggedIn == False):
                 authResult = authenticateUser(self)
+                self = authResult[2]
                 if (authResult[1] == True):
                     self.username = authResult[0]
                     self.loginTime = time.time()
                     self.loggedIn = True
+                    self.socketStatus = True
                     time.sleep(1)
                     broadcast(self, "{} logged in \n".format(self.username))
                     offline = sendOfflineMessages(self)
@@ -307,6 +326,13 @@ def runthread(self):
     except Exception:
         print ("[Thread - %d] Client thread terminated exceptionally." % (threading.currentThread().ident))
     print ("[Thread - %d] Client thread terminated." % (threading.currentThread().ident))
+
+
+def printClientList():
+    for clientThread in client_list:
+        message = "user: {}, loggedIn: {}".format(clientThread.username, clientThread.loggedIn)
+        print(message)
+
 
 class Client():
 
@@ -376,8 +402,6 @@ def server_program():
         print("Connection from: " + str(address))
         aClient = Client(conn, address)
         threading.Thread(target=runthread, args=(aClient,)).start()
-        
-        client_list.append(aClient)
 
 
 if __name__ == '__main__':
