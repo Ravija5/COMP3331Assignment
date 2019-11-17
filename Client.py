@@ -139,7 +139,7 @@ def client_program():
                 print (data),
 
                 if (data.encode() == ("Credentials authenticated\n")):
-                    print("prompt set to true")
+                    # print("prompt set to true")
                     showPrompt = True
 
                 if (data.startswith("P2PREQUEST")):

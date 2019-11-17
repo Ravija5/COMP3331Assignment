@@ -256,6 +256,7 @@ class ClientThread(Thread):
                         self.username = authResult[0]
                         self.loginTime = time.time()
                         self.loggedIn = True
+                        time.sleep(1)
                         broadcast(self,"{} logged in \n".format(self.username))
                         offline = sendOfflineMessages(self)
                         if(len(offline) == 0):
