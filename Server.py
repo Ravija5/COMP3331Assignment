@@ -196,47 +196,47 @@ def openp2p(self, to_user):
         self.conn.send("User does not exist.\n".encode())
         return
 
-    toClientThread = None
-    for clientThread in client_list:
-        if (clientThread.username == to_user):
-            toClientThread = clientThread
+    client = None
+    for aClient in client_list:
+        if (aClient.username == to_user):
+            client = aClient
             break
 
-    if (toClientThread == None):
+    if (client == None):
         self.conn.send("User is not logged in.\n".encode())
         return
 
-    if (toClientThread.loggedIn == False):
+    if (client.loggedIn == False):
         self.conn.send("User is not logged in.\n".encode())
         return
 
-    if (toClientThread.username == self.username):
+    if (client.username == self.username):
         self.conn.send("User is same as you.\n".encode())
         return
 
-    if (toClientThread.username in self.blockedFrom):
+    if (client.username in self.blockedFrom):
         self.conn.send("You are blocked by this user.\n".encode())
         return
 
     # P2PREQUEST b a
     message = "P2PREQUEST {} {}".format(self.username, to_user)
     print("Sending message: " + message)
-    toClientThread.conn.send(message.encode())
+    client.conn.send(message.encode())
 
 
 def sendback_port(self, fromuser, touser, ip, port):
     # P2PPORT b a IP 55001
-    toClientThread = None
-    for clientThread in client_list:
-        if (clientThread.username == fromuser):
-            toClientThread = clientThread
+    client = None
+    for aClient in client_list:
+        if (aClient.username == fromuser):
+            client = aClient
             break
-    if (toClientThread == None):
+    if (client == None):
         print("User {} not found".format(fromuser))
         return
     message = "P2PACCEPTED {} {} {} {}".format(fromuser, touser, ip, port)
     print("Sending message: " + message)
-    toClientThread.conn.send(message.encode())
+    client.conn.send(message.encode())
 
 def runthread(self):
     print ("[Thread - %d] New socket thread started from:%s" % (threading.currentThread().ident, str(self.address)))
