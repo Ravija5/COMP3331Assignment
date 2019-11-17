@@ -19,10 +19,11 @@ def prompt():
 
 
 class P2P_Thread(Thread):
-    def __init__(self, my_socket, username, ip, port, starts_socket):
+    def __init__(self, my_socket, username, me, ip, port, starts_socket):
         Thread.__init__(self)
         self.my_socket = my_socket
         self.username = username
+        self.me = me
         self.ip = ip
         self.port = port
         self.starts_socket = starts_socket
@@ -38,13 +39,13 @@ class P2P_Thread(Thread):
             self.client_socket = client_socket
             self.addr = addr
             self.sending_socket = client_socket
-            print("P2P establisbed with {}".format(self.username))
+            # print("Start private messaging with {}".format(self.username))
             eventloop(self.client_socket)
             terminateBoth(self.my_socket, self.client_socket)
         else:
             print("Connecting to Peer...")
             self.my_socket.connect((self.ip, int(self.port)))
-            print("P2P establisbed with {}".format(self.username))
+            print("Start private messaging with {}".format(self.username))
             self.sending_socket = self.my_socket
             eventloop(self.my_socket)
             terminate(self.my_socket)
@@ -91,10 +92,11 @@ def sendprivatemessage(to, data):
             toP2PThread = aThread
             break
     if (toP2PThread == None):
-        print("Try `startprivate {}` command first.".format(to))
+        #Error. Private messaging to luke not enabled
+        print("Error. Private messaging to {} not enabled".format(to))
         return
-
-    toP2PThread.sending_socket.sendall(data.encode())
+    fulldata = "{}(private): {}".format(toP2PThread.me, data)
+    toP2PThread.sending_socket.sendall(fulldata.encode())
 
 
 def removeuser(name):
@@ -151,7 +153,7 @@ def client_program():
                     s.listen(2)  # Now wait for client connection.
                     fromuser = data.split()[1]
                     touser = data.split()[2]
-                    aThread = P2P_Thread(s, fromuser, None, None, True)
+                    aThread = P2P_Thread(s, fromuser, touser, None, None, True)
                     p2p_list.append(aThread)
                     aThread.start()
                     # P2PPORT b a 55001
@@ -167,7 +169,7 @@ def client_program():
                     port = data.split()[4]
                     s = socket(AF_INET, SOCK_STREAM)
                     print("Socket created")
-                    aThread = P2P_Thread(s, touser, ip, port, False)
+                    aThread = P2P_Thread(s, touser, fromuser, ip, port, False)
                     p2p_list.append(aThread)
                     aThread.start()
 
@@ -188,8 +190,7 @@ def client_program():
                         print("Usage: private <user> <message>")
                     else:
                         to = parts[1]
-                        data = parts[2]
-                        sendprivatemessage(to, data)
+                        sendprivatemessage(to, parts[2])
                 elif (message.startswith("stopprivate")):
                     # stopprivate a
                     parts = message.split()
