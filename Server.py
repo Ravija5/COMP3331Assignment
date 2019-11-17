@@ -65,7 +65,7 @@ def broadcast(self, message):
     if (len(self.blockedFrom) != 0):
         self.conn.send("Your message could not be delivered to some recipients\n".encode())
 
-    for clientThread in clientThreads:
+    for clientThread in client_list:
         if (
                 clientThread.loggedIn == True and clientThread.username != self.username and clientThread.username not in self.blockedFrom):
             clientThread.conn.send(message.encode())
@@ -82,7 +82,7 @@ def blockFrom(self, username):
         return
 
     # Hans said -> Block yoda => yoda has hansi n his blocked form list => output is: blocked yoda
-    for clientThread in clientThreads:
+    for clientThread in client_list:
         # Proabbly an encoding decoding issue
 
         if ((clientThread.username == username)):
@@ -109,7 +109,7 @@ def unblockFrom(self, username):
         return
 
     # hans says unblock yoda => remove hans from yoda's block from list
-    for clientThread in clientThreads:
+    for clientThread in client_list:
         if (clientThread.username == username):
             try:
                 clientThread.blockedFrom.remove(self.username)
@@ -124,7 +124,7 @@ def unblockFrom(self, username):
 def whoelsesince(self, givenTime):
     print ("In whoelse since")
     lastOnline = []
-    for clientThread in clientThreads:
+    for clientThread in client_list:
         if (clientThread.username != self.username):
             print("{} logged in at {}\n".format(clientThread.username, clientThread.loginTime))
             elapsedTime = time.time() - clientThread.loginTime
@@ -162,7 +162,7 @@ def messageUser(self, username, message):
         return
 
     # Checking for all users
-    for clientThread in clientThreads:
+    for clientThread in client_list:
         if (clientThread.username == username):
             if (clientThread.loggedIn == True):
                 clientThread.conn.send("{}: {}\n".format(self.username, message).encode())
@@ -180,7 +180,7 @@ class InactiveUserBooter(Thread):
         while 1:
             # Scroll through list of inactive users and disconnect them
             timeNow = time.time()
-            for clientThread in clientThreads:
+            for clientThread in client_list:
                 if (clientThread.socketStatus == False):
                     continue
                 elapsedTime = timeNow - clientThread.lastActivityTime
@@ -197,7 +197,7 @@ def openp2p(self, to_user):
         return
 
     toClientThread = None
-    for clientThread in clientThreads:
+    for clientThread in client_list:
         if (clientThread.username == to_user):
             toClientThread = clientThread
             break
@@ -227,7 +227,7 @@ def openp2p(self, to_user):
 def sendback_port(self, fromuser, touser, ip, port):
     # P2PPORT b a IP 55001
     toClientThread = None
-    for clientThread in clientThreads:
+    for clientThread in client_list:
         if (clientThread.username == fromuser):
             toClientThread = clientThread
             break
@@ -238,11 +238,79 @@ def sendback_port(self, fromuser, touser, ip, port):
     print("Sending message: " + message)
     toClientThread.conn.send(message.encode())
 
+def runthread(self):
+    print ("[Thread - %d] New socket thread started from:%s" % (threading.currentThread().ident, str(self.address)))
+    try:
+        while 1:
+            if (self.socketStatus == False):
+                return
+            if (self.loggedIn == False):
+                authResult = authenticateUser(self)
+                if (authResult[1] == True):
+                    self.username = authResult[0]
+                    self.loginTime = time.time()
+                    self.loggedIn = True
+                    time.sleep(1)
+                    broadcast(self, "{} logged in \n".format(self.username))
+                    offline = sendOfflineMessages(self)
+                    if (len(offline) == 0):
+                        self.conn.send("You received no offline messages\n".encode())
+                    for msg in offline:
+                        self.conn.send("{}\n".format(msg).encode())
+                    self.lastActivityTime = time.time()
+                continue
 
-class ClientThread(Thread):
+            # prompt()
+            command = self.conn.recv(1024).decode()
+            self.lastActivityTime = time.time()
+            commands = command.split()
+            if (commands[0] == "broadcast"):
+                msg = ' '.join(commands[1:])
+                broadcast(self, "{}: {}\n".format(self.username, msg))
+                continue
+            elif (commands[0] == "whoelse"):
+                for clientThread in client_list:
+                    if (clientThread.loggedIn == True and clientThread.username != self.username):
+                        self.conn.send("{}\n".format(clientThread.username))
+                continue
+            elif (commands[0] == "whoelsesince"):
+                lastOnline = whoelsesince(self, commands[1])
+                for client in lastOnline:
+                    self.conn.send("{}\n".format(client.username))
+                continue
+            elif (commands[0] == "message"):
+                msg = ' '.join(commands[2:])
+                messageUser(self, commands[1], msg)
+                continue
+            elif (commands[0] == "block"):
+                blockFrom(self, commands[1])
+                continue
+            elif (commands[0] == "unblock"):
+                unblockFrom(self, commands[1])
+                continue
+            elif (commands[0] == "logout"):
+                self.loggedIn = False
+                break
+            elif (commands[0] == "startprivate"):
+                # startprivate a
+                openp2p(self, commands[1])
+                continue
+            elif (commands[0] == "P2PPORT"):
+                # P2PPORT b a 55001
+                print(commands)
+                sendback_port(self, commands[1], commands[2], self.address[0], commands[3])
+                continue
+            else:
+                self.conn.send("Command does not exist. Try again\n")
+                continue
+        disconnectUser(self)
+    except Exception:
+        print ("[Thread - %d] Client thread terminated exceptionally." % (threading.currentThread().ident))
+    print ("[Thread - %d] Client thread terminated." % (threading.currentThread().ident))
+
+class Client():
 
     def __init__(self, conn, address):
-        Thread.__init__(self)
         self.conn = conn
         self.address = address
         self.loggedIn = False
@@ -250,75 +318,6 @@ class ClientThread(Thread):
         self.blockedFrom = []
         self.offlineMsgs = []
         self.lastActivityTime = time.time()
-        print ("[Thread - %d] New socket thread started from:%s" % (threading.currentThread().ident, str(address)))
-
-    def run(self):
-        try:
-            while 1:
-                if (self.socketStatus == False):
-                    return
-                if (self.loggedIn == False):
-                    authResult = authenticateUser(self)
-                    if (authResult[1] == True):
-                        self.username = authResult[0]
-                        self.loginTime = time.time()
-                        self.loggedIn = True
-                        time.sleep(1)
-                        broadcast(self, "{} logged in \n".format(self.username))
-                        offline = sendOfflineMessages(self)
-                        if (len(offline) == 0):
-                            self.conn.send("You received no offline messages\n".encode())
-                        for msg in offline:
-                            self.conn.send("{}\n".format(msg).encode())
-                        self.lastActivityTime = time.time()
-                    continue
-
-                # prompt()
-                command = self.conn.recv(1024).decode()
-                self.lastActivityTime = time.time()
-                commands = command.split()
-                if (commands[0] == "broadcast"):
-                    msg = ' '.join(commands[1:])
-                    broadcast(self, "{}: {}\n".format(self.username, msg))
-                    continue
-                elif (commands[0] == "whoelse"):
-                    for clientThread in clientThreads:
-                        if (clientThread.loggedIn == True and clientThread.username != self.username):
-                            self.conn.send("{}\n".format(clientThread.username))
-                    continue
-                elif (commands[0] == "whoelsesince"):
-                    lastOnline = whoelsesince(self, commands[1])
-                    for client in lastOnline:
-                        self.conn.send("{}\n".format(client.username))
-                    continue
-                elif (commands[0] == "message"):
-                    msg = ' '.join(commands[2:])
-                    messageUser(self, commands[1], msg)
-                    continue
-                elif (commands[0] == "block"):
-                    blockFrom(self, commands[1])
-                    continue
-                elif (commands[0] == "unblock"):
-                    unblockFrom(self, commands[1])
-                    continue
-                elif (commands[0] == "logout"):
-                    self.loggedIn = False
-                    disconnectUser(self)
-                    continue
-                elif (commands[0] == "startprivate"):
-                    # startprivate a
-                    openp2p(self, commands[1])
-                    continue
-                elif (commands[0] == "P2PPORT"):
-                    # P2PPORT b a 55001
-                    print(commands)
-                    sendback_port(self, commands[1], commands[2], self.address[0], commands[3])
-                    continue
-                else:
-                    self.conn.send("Command does not exist. Try again\n")
-                    continue
-        except Exception:
-            print("Client thread terminated.")
 
 
 # Open file
@@ -352,7 +351,7 @@ def isExists(uname):
     return False
 
 
-clientThreads = []
+client_list = []
 
 PORT = int(sys.argv[1])
 BLOCKED_DURATION = int(sys.argv[2])
@@ -375,9 +374,10 @@ def server_program():
         server_socket.listen(20)
         conn, address = server_socket.accept()  # accept new connection
         print("Connection from: " + str(address))
-        aThread = ClientThread(conn, address)
-        aThread.start()
-        clientThreads.append(aThread)
+        aClient = Client(conn, address)
+        threading.Thread(target=runthread, args=(aClient,)).start()
+        
+        client_list.append(aClient)
 
 
 if __name__ == '__main__':
