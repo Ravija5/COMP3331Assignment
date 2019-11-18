@@ -89,7 +89,7 @@ def broadcast(self, message):
 
 
 def blockFrom(self, username):
-    print("Checkking for : {}".format(username))
+    print("Checking for : {}".format(username))
     if (isExists(username) == False):
         self.conn.send("User does not exist in credentials\n".encode())
         return
@@ -97,23 +97,17 @@ def blockFrom(self, username):
     if (username == self.username):
         self.conn.send("Cannot block self\n".encode())
         return
-
+    
+    print(blockedFromDict[username])
+    #print(self.username in blockedFromDict[username])
     # Hans said -> Block yoda => yoda has hansi n his blocked form list => output is: blocked yoda
-    for clientThread in client_list:
-        # Proabbly an encoding decoding issue
-
-        if ((clientThread.username == username)):
-            print(clientThread.username)
-            print(username)
-            if (self.username not in clientThread.blockedFrom):
-                clientThread.blockedFrom.append(self.username.encode())
-                # print (clientThread.blockedFrom)
-            else:
-                self.conn.send("User is already blocked\n".encode())
-                return
-            break
-
-    self.conn.send("Blocked {}\n".format(username))
+    if(self.username in blockedFromDict[username]):
+        self.conn.send("User is already blocked\n".encode())
+    else:
+        print("In else")
+        blockedFromDict[username].append(self.username.encode())
+        print(blockedFromDict)
+        self.conn.send("Blocked {}\n".format(username))
 
 
 def unblockFrom(self, username):
@@ -125,15 +119,17 @@ def unblockFrom(self, username):
         self.conn.send("Cannot unblock self\n".encode())
         return
 
+    found = False
+    print(client_list)
     # hans says unblock yoda => remove hans from yoda's block from list
     for clientThread in client_list:
         if (clientThread.username == username):
-            try:
-                clientThread.blockedFrom.remove(self.username)
-                print (clientThread.blockedFrom)
-                break
-            except ValueError:
-                self.conn.send("User is already unblocked. No action required\n".encode())
+            clientThread.blockedFrom.remove(self.username)
+            print (clientThread.blockedFrom)
+            found = True
+              
+    if(found == False):
+        self.conn.send("User is already unblocked. No action required\n".encode())
 
     self.conn.send("Unblocked {}\n".format(username))
 
@@ -355,14 +351,16 @@ userTries = {}
 userPass = {}
 # To keep a track of user status (blocked/unblocked)
 userBlock = {}
-clientInfo = {}
+#Username -> blocked from users
+blockedFromDict = {}
 
 for userCreds in credLines:
     user = userCreds.split()
     userTries[user[0]] = 0
     userPass[user[0]] = user[1]
     userBlock[user[0]] = 0
-
+    blockedFromDict[user[0]] = []
+print(blockedFromDict)
 
 # To check if a username exists in database
 def isExists(uname):
