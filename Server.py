@@ -130,7 +130,6 @@ def whoelsesince(self, givenTime):
 def sendOfflineMessages(self):
     offline = []
     if (len(offLineMsgDict[self.username]) == 0):
-        #self.conn.send("You received no offline messages\n".encode())
         return offline
 
     self.conn.send("Your offline messages are:\n".encode())
@@ -139,12 +138,9 @@ def sendOfflineMessages(self):
     for sender, msg in v:
         text = ("{}: {}".format(sender, msg))
         offline.append(text)
-
-    print("Cleaning offline dict")
+        
     offLineMsgDict[self.username] = []
-    print(offLineMsgDict)
     return offline
-
 
 def messageUser(self, username, message):
     if (isExists(username) == False):
@@ -164,12 +160,8 @@ def messageUser(self, username, message):
         if (clientThread.username == username and clientThread.loggedIn == True):
             clientThread.conn.send("{}: {}\n".format(self.username, message).encode())
             return
-
-    print("In msg user")
-    print(offLineMsgDict)
     # Add to offline messages for clientThread
     offLineMsgDict[username].append((self.username.encode(), message.encode()))
-    print (offLineMsgDict)
 
 
 class InactiveUserBooter(Thread):
@@ -212,10 +204,10 @@ def openp2p(self, to_user):
         return
 
     if (client.username == self.username):
-        self.conn.send("User is same as you.\n".encode())
+        self.conn.send("Cannot initiate private messaging with self.\n".encode())
         return
 
-    if (client.username in self.blockedFrom):
+    if (to_user in blockedFromDict[self.username]):
         self.conn.send("You are blocked by this user.\n".encode())
         return
 
