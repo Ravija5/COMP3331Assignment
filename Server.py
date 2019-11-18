@@ -44,7 +44,7 @@ def authenticateUser(self):
 
     if (userBlock[uname] != 0):
         elapsedTime = time.time() - userBlock[uname]
-        print elapsedTime
+        print (elapsedTime)
         if (float(elapsedTime) < float(BLOCKED_DURATION)):
             self.conn.send("Your account is blocked due to multiple login failures. Please try again later\n")
             disconnectUser(self)
@@ -137,17 +137,13 @@ def unblockFrom(self, username):
 
     self.conn.send("Unblocked {}\n".format(username))
 
-
 def whoelsesince(self, givenTime):
-    print ("In whoelse since")
     lastOnline = []
     for clientThread in client_list:
         if (clientThread.username != self.username):
-            print("{} logged in at {}\n".format(clientThread.username, clientThread.loginTime))
-            elapsedTime = time.time() - clientThread.loginTime
-            # print (elapsedTime)
-            print("Elasped time = {}".format(elapsedTime))
-            if (elapsedTime < givenTime):
+            currTime = time.time()
+            elapsedTime = currTime - clientThread.loginTime
+            if (int(elapsedTime) < int(givenTime)):  
                 lastOnline.append(clientThread)
 
     return lastOnline
