@@ -77,16 +77,13 @@ def authenticateUser(self):
     disconnectUser(self)
     return (uname, False, self)
 
-
-def broadcast(self, message):
-    if (len(self.blockedFrom) != 0):
+def broadcast(self, message, isUserCommand):
+    if (len(blockedFromDict[self.username]) != 0 and isUserCommand):
         self.conn.send("Your message could not be delivered to some recipients\n".encode())
 
     for clientThread in client_list:
-        if (
-                clientThread.loggedIn == True and clientThread.username != self.username and clientThread.username not in self.blockedFrom):
+        if (clientThread.loggedIn == True and clientThread.username != self.username and clientThread.username not in blockedFromDict[self.username]):
             clientThread.conn.send(message.encode())
-
 
 def blockFrom(self, username):
     print("Checking for : {}".format(username))
@@ -98,13 +95,11 @@ def blockFrom(self, username):
         self.conn.send("Cannot block self\n".encode())
         return
     
-    # Hans said -> Block yoda => yoda has hansi n his blocked form list => output is: blocked yoda
     if(self.username in blockedFromDict[username]):
         self.conn.send("User is already blocked\n".encode())
     else:
         blockedFromDict[username].append(self.username.encode())
         self.conn.send("Blocked {}\n".format(username))
-        print(blockedFromDict)
 
 def unblockFrom(self, username):
     if (isExists(username) == False):
@@ -119,21 +114,7 @@ def unblockFrom(self, username):
         self.conn.send("User is already unblocked. No action required\n".encode())
     else:
         blockedFromDict[username].remove(self.username)
-        self.conn.send("Unblocked {}\n".format(username))
-    print(blockedFromDict)
-    # found = False
-    # print(client_list)
-    # # hans says unblock yoda => remove hans from yoda's block from list
-    # for clientThread in client_list:
-    #     if (clientThread.username == username):
-    #         clientThread.blockedFrom.remove(self.username)
-    #         print (clientThread.blockedFrom)
-    #         found = True
-              
-    # if(found == False):
-    #     self.conn.send("User is already unblocked. No action required\n".encode())
-
-    
+        self.conn.send("Unblocked {}\n".format(username))   
 
 def whoelsesince(self, givenTime):
     lastOnline = []
@@ -145,7 +126,6 @@ def whoelsesince(self, givenTime):
                 lastOnline.append(clientThread)
 
     return lastOnline
-
 
 def sendOfflineMessages(self):
     offline = []
@@ -164,11 +144,13 @@ def sendOfflineMessages(self):
 def messageUser(self, username, message):
     if (isExists(username) == False):
         self.conn.send("User does not exist in credentials\n".encode())
+        return
 
     if (username == self.username):
         self.conn.send("Cannot send message to self\n".encode())
+        return
 
-    if (username in self.blockedFrom):
+    if (username in blockedFromDict[self.username]):
         self.conn.send("You cannot message {} as you have been blocked by them\n".format(username).encode())
         return
 
@@ -264,7 +246,7 @@ def runthread(self):
                     self.loggedIn = True
                     self.socketStatus = True
                     time.sleep(1)
-                    broadcast(self, "{} logged in \n".format(self.username))
+                    broadcast(self, "{} logged in \n".format(self.username),False)
                     offline = sendOfflineMessages(self)
                     if (len(offline) == 0):
                         self.conn.send("You received no offline messages\n".encode())
@@ -279,7 +261,7 @@ def runthread(self):
             commands = command.split()
             if (commands[0] == "broadcast"):
                 msg = ' '.join(commands[1:])
-                broadcast(self, "{}: {}\n".format(self.username, msg))
+                broadcast(self, "{}: {}\n".format(self.username, msg), True)
                 continue
             elif (commands[0] == "whoelse"):
                 for clientThread in client_list:
@@ -303,7 +285,7 @@ def runthread(self):
                 continue
             elif (commands[0] == "logout"):
                 self.loggedIn = False
-                broadcast(self, "{} logged out\n".format(self.username))
+                broadcast(self, "{} logged out\n".format(self.username), False)
                 break
             elif (commands[0] == "startprivate"):
                 # startprivate a
