@@ -129,15 +129,20 @@ def whoelsesince(self, givenTime):
 
 def sendOfflineMessages(self):
     offline = []
-    if (len(self.offlineMsgs) == 0):
-        # self.conn.send("You received no offline messages\n".encode())
+    if (len(offLineMsgDict[self.username]) == 0):
+        #self.conn.send("You received no offline messages\n".encode())
         return offline
 
     self.conn.send("Your offline messages are:\n".encode())
-    for msg in self.offlineMsgs:
-        offline.append(msg)
-        # self.conn.send("{}\n".format(msg))
-    self.offlineMsgs = []
+    #Usernames and passwords
+    v = offLineMsgDict[self.username]
+    for sender, msg in v:
+        text = ("{}: {}".format(sender, msg))
+        offline.append(text)
+
+    print("Cleaning offline dict")
+    offLineMsgDict[self.username] = []
+    print(offLineMsgDict)
     return offline
 
 
@@ -156,12 +161,15 @@ def messageUser(self, username, message):
 
     # Checking for all users
     for clientThread in client_list:
-        if (clientThread.username == username):
-            if (clientThread.loggedIn == True):
-                clientThread.conn.send("{}: {}\n".format(self.username, message).encode())
-            else:
-                # Add to offline messages for clientThread
-                clientThread.offlineMsgs.append(message)
+        if (clientThread.username == username and clientThread.loggedIn == True):
+            clientThread.conn.send("{}: {}\n".format(self.username, message).encode())
+            return
+
+    print("In msg user")
+    print(offLineMsgDict)
+    # Add to offline messages for clientThread
+    offLineMsgDict[username].append((self.username.encode(), message.encode()))
+    print (offLineMsgDict)
 
 
 class InactiveUserBooter(Thread):
@@ -337,6 +345,7 @@ userPass = {}
 userBlock = {}
 #Username -> blocked from users
 blockedFromDict = {}
+offLineMsgDict = {}
 
 for userCreds in credLines:
     user = userCreds.split()
@@ -344,7 +353,7 @@ for userCreds in credLines:
     userPass[user[0]] = user[1]
     userBlock[user[0]] = 0
     blockedFromDict[user[0]] = []
-print(blockedFromDict)
+    offLineMsgDict[user[0]] = []
 
 # To check if a username exists in database
 def isExists(uname):
