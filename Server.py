@@ -227,6 +227,7 @@ def sendback_port(self, fromuser, touser, ip, port):
     if (client == None):
         print("User {} not found".format(fromuser))
         return
+
     message = "P2PACCEPTED {} {} {} {}".format(fromuser, touser, ip, port)
     print("Sending message: " + message)
     client.conn.send(message.encode())
@@ -269,6 +270,7 @@ def runthread(self):
                         self.conn.send("{}\n".format(clientThread.username))
                 continue
             elif (commands[0] == "whoelsesince"):
+                if(len(commands) != 2): self.conn.send("Command does not exist. Try again\n")
                 lastOnline = whoelsesince(self, commands[1])
                 for client in lastOnline:
                     self.conn.send("{}\n".format(client.username))
@@ -278,9 +280,11 @@ def runthread(self):
                 messageUser(self, commands[1], msg)
                 continue
             elif (commands[0] == "block"):
+                if(len(commands) != 2): self.conn.send("Command does not exist. Try again\n")
                 blockFrom(self, commands[1])
                 continue
             elif (commands[0] == "unblock"):
+                if(len(commands) != 2): self.conn.send("Command does not exist. Try again\n")
                 unblockFrom(self, commands[1])
                 continue
             elif (commands[0] == "logout"):
@@ -288,7 +292,7 @@ def runthread(self):
                 broadcast(self, "{} logged out\n".format(self.username), False)
                 break
             elif (commands[0] == "startprivate"):
-                # startprivate a
+                if(len(commands) != 2): self.conn.send("Command does not exist. Try again\n")
                 openp2p(self, commands[1])
                 continue
             elif (commands[0] == "P2PPORT"):
