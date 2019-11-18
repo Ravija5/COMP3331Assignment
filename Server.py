@@ -98,17 +98,13 @@ def blockFrom(self, username):
         self.conn.send("Cannot block self\n".encode())
         return
     
-    print(blockedFromDict[username])
-    #print(self.username in blockedFromDict[username])
     # Hans said -> Block yoda => yoda has hansi n his blocked form list => output is: blocked yoda
     if(self.username in blockedFromDict[username]):
         self.conn.send("User is already blocked\n".encode())
     else:
-        print("In else")
         blockedFromDict[username].append(self.username.encode())
-        print(blockedFromDict)
         self.conn.send("Blocked {}\n".format(username))
-
+        print(blockedFromDict)
 
 def unblockFrom(self, username):
     if (isExists(username) == False):
@@ -119,19 +115,25 @@ def unblockFrom(self, username):
         self.conn.send("Cannot unblock self\n".encode())
         return
 
-    found = False
-    print(client_list)
-    # hans says unblock yoda => remove hans from yoda's block from list
-    for clientThread in client_list:
-        if (clientThread.username == username):
-            clientThread.blockedFrom.remove(self.username)
-            print (clientThread.blockedFrom)
-            found = True
-              
-    if(found == False):
+    if(self.username not in blockedFromDict[username]):
         self.conn.send("User is already unblocked. No action required\n".encode())
+    else:
+        blockedFromDict[username].remove(self.username)
+        self.conn.send("Unblocked {}\n".format(username))
+    print(blockedFromDict)
+    # found = False
+    # print(client_list)
+    # # hans says unblock yoda => remove hans from yoda's block from list
+    # for clientThread in client_list:
+    #     if (clientThread.username == username):
+    #         clientThread.blockedFrom.remove(self.username)
+    #         print (clientThread.blockedFrom)
+    #         found = True
+              
+    # if(found == False):
+    #     self.conn.send("User is already unblocked. No action required\n".encode())
 
-    self.conn.send("Unblocked {}\n".format(username))
+    
 
 def whoelsesince(self, givenTime):
     lastOnline = []
