@@ -117,15 +117,20 @@ def unblockFrom(self, username):
         self.conn.send("Unblocked {}\n".format(username))   
 
 def whoelsesince(self, givenTime):
+    
     lastOnline = []
+
     for clientThread in client_list:
         if (clientThread.username != self.username):
             currTime = time.time()
             elapsedTime = currTime - clientThread.loginTime
-            if (int(elapsedTime) < int(givenTime)):  
+            print("{} - {}".format(clientThread.username, elapsedTime))
+            if (int(elapsedTime) < int(givenTime) or clientThread.loggedIn == True):  
                 lastOnline.append(clientThread)
-
+               
+    print(lastOnline)
     return lastOnline
+
 
 def sendOfflineMessages(self):
     offline = []
@@ -270,9 +275,12 @@ def runthread(self):
                         self.conn.send("{}\n".format(clientThread.username))
                 continue
             elif (commands[0] == "whoelsesince"):
-                if(len(commands) != 2): self.conn.send("Command does not exist. Try again\n")
+                if(len(commands) != 2): 
+                    self.conn.send("Command does not exist. Try again\n")
+                    continue
                 lastOnline = whoelsesince(self, commands[1])
                 for client in lastOnline:
+                  
                     self.conn.send("{}\n".format(client.username))
                 continue
             elif (commands[0] == "message"):
