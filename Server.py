@@ -294,7 +294,7 @@ def isExists(uname):
             break
     return False
 
-#Method called when a 
+#Method called when a thread starts up initially
 def runthread(self):
     print ("[Thread - %d] New socket thread started from:%s" % (threading.currentThread().ident, str(self.address)))
     try:

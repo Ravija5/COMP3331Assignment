@@ -4,10 +4,13 @@ import select
 import sys
 from threading import Thread
 
+#TODO : add IP and port as command line args
 showPrompt = False
 #List maintaining the threads of P2P connections active
 p2pList = []
 HOST = "127.0.0.1"
+#HOST = sysargv[1]
+#PORT = sysargv[2]
 
 #To print the '>' before a user command
 def prompt():
