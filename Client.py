@@ -1,16 +1,15 @@
+# Using Python 2.7.10
 from random import randint
 from socket import *
 import select
 import sys
 from threading import Thread
 
-#TODO : add IP and port as command line args
 showPrompt = False
 #List maintaining the threads of P2P connections active
 p2pList = []
-HOST = "127.0.0.1"
-#HOST = sysargv[1]
-#PORT = sysargv[2]
+HOST = sys.argv[1]
+PORT = int(sys.argv[2])
 
 #To print the '>' before a user command
 def prompt():
@@ -125,7 +124,7 @@ def disconnectAllP2P():
 
 
 def client_program():
-    port = 13007  # socket server port number
+    port = PORT  # socket server port number
     isLogged = False
 
     client_socket = socket(AF_INET, SOCK_STREAM)  # instantiate
