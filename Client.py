@@ -5,10 +5,11 @@ import sys
 from threading import Thread
 
 showPrompt = False
-p2p_list = []
+#List maintaining the threads of P2P connections active
+p2pList = []
 HOST = "127.0.0.1"
 
-
+#To print the '>' before a user command
 def prompt():
     if (showPrompt == True):
         sys.stdout.write(">")
@@ -17,7 +18,7 @@ def prompt():
         sys.stdout.write("")
         sys.stdout.flush()
 
-
+#To create a new P2P connection thread
 class P2P_Thread(Thread):
     def __init__(self, my_socket, username, me, ip, port, starts_socket):
         Thread.__init__(self)
@@ -26,7 +27,7 @@ class P2P_Thread(Thread):
         self.me = me
         self.ip = ip
         self.port = port
-        self.starts_socket = starts_socket
+        self.starts_socket = starts_socket #tells if thsi is the server socket
 
         self.daemon = True
         # self.socketStatus = False
@@ -51,7 +52,7 @@ class P2P_Thread(Thread):
             terminate(self.my_socket)
         removeuser(self.username)
 
-
+#Method to handle continuos sending and receiving of messages when in a P2P connection
 def eventloop(client_socket):
     while 1:
         try:
@@ -84,10 +85,10 @@ def terminate(client_socket):
     except Exception as ex:
         print ("Client socket already closed")
 
-
+#Method to handle sending of private messages b/w two peers
 def sendprivatemessage(to, data):
     toP2PThread = None
-    for aThread in p2p_list:
+    for aThread in p2pList:
         if (aThread.username == to):
             toP2PThread = aThread
             break
@@ -98,25 +99,27 @@ def sendprivatemessage(to, data):
     fulldata = "{}(private): {}".format(toP2PThread.me, data)
     toP2PThread.sending_socket.sendall(fulldata.encode())
 
-
+#Method to remove a client from the global p2pList
 def removeuser(name):
     toP2PThread = None
-    for aThread in p2p_list:
+    for aThread in p2pList:
         if (aThread.username == name):
             toP2PThread = aThread
             break
 
     if (toP2PThread != None):
-        p2p_list.remove(toP2PThread)
+        p2pList.remove(toP2PThread)
 
 
 def sayBye(to):
     sendprivatemessage(to, "BYE")
     removeuser(to)
 
+#Method to disconnect all peer attached to a client in p2p
 def disconnectAllP2P():
-    for aThread in p2p_list:
+    for aThread in p2pList:
         sayBye(aThread.username)
+
 
 def client_program():
     port = 13007  # socket server port number
@@ -145,24 +148,25 @@ def client_program():
                     showPrompt = True
 
                 if (data.startswith("P2PREQUEST")):
+                    # P2P request received from a client 
                     # P2PREQUEST b a
                     s = socket(AF_INET, SOCK_STREAM)
                     host = ''
                     port = randint(10000, 63000)
                     s.bind((HOST, port))
                     s.listen(2)  # Now wait for client connection.
-                    fromuser = data.split()[1]
-                    touser = data.split()[2]
+                    fromuser = data.split()[1] #user who initiated P2P
+                    touser = data.split()[2] #user with whom P2P is initiated
                     aThread = P2P_Thread(s, fromuser, touser, None, None, True)
-                    p2p_list.append(aThread)
+                    p2pList.append(aThread)
                     aThread.start()
                     # P2PPORT b a 55001
                     message = "P2PPORT {} {} {}".format(fromuser, touser, port)
                     print("Sending message to server: " + message)
-                    client_socket.send(message.encode())
+                    client_socket.send(message.encode()) #Send back message to user
 
                 if (data.startswith("P2PACCEPTED")):
-                    # P2PACCEPTED b a 127.0.0.1 55001
+                    # P2PACCEPTED b a host port
                     fromuser = data.split()[1]
                     touser = data.split()[2]
                     ip = data.split()[3]
@@ -170,7 +174,7 @@ def client_program():
                     s = socket(AF_INET, SOCK_STREAM)
                     print("Socket created")
                     aThread = P2P_Thread(s, touser, fromuser, ip, port, False)
-                    p2p_list.append(aThread)
+                    p2pList.append(aThread)
                     aThread.start()
 
                 if (data.startswith("Bye")):
