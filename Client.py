@@ -4,6 +4,7 @@ from socket import *
 import select
 import sys
 from threading import Thread
+import time
 
 showPrompt = False
 #List maintaining the threads of P2P connections active
@@ -67,10 +68,13 @@ def eventloop(client_socket):
             if sock == client_socket:
                 data = client_socket.recv(1024).decode()
                 print(data)
-                if (data.startswith("BYE")):
-                    client_socket.sendall("BYE".encode())  # Say BYE to remote.
+                if (data.endswith("BYE")):
+                    # b(private): BYE
+                    parts = data.split("(")
+                    removeuser(parts[0])
                     print("Disconnecting.")
                     return
+
 
                 prompt()
 
@@ -121,7 +125,7 @@ def sayBye(to):
 def disconnectAllP2P():
     for aThread in p2pList:
         sayBye(aThread.username)
-
+    sys.exit(0)
 
 def client_program():
     port = PORT  # socket server port number
