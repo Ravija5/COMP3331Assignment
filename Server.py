@@ -425,7 +425,7 @@ class Client():
 #Method to satrt up the server
 def server_program():
     # get the hostname
-    host = "127.0.0.1"
+    host = "0.0.0.0"
     print("Host: " + host)
 
     server_socket = socket(AF_INET, SOCK_STREAM)  # get instance
