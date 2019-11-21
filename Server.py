@@ -39,7 +39,6 @@ for userCreds in credLines:
 
 #Method to disconnect a user gracefully
 def disconnectUser(self):
-    print ("In disconnect: {} ".format(getattr(self, 'username', 'NONE')))
     self.conn.send("Bye\n".encode())
     self.socketStatus = False
     time.sleep(1)
@@ -54,13 +53,11 @@ def authenticateUser(self):
     self.conn.send("Username:".encode())
     uname = self.conn.recv(1024).decode()
     self.lastActivityTime = time.time()
-    print("[Thread - %d] username recd: %s" % (threading.currentThread().ident, str(uname)))
 
     while (isExists(uname) == False):
         self.conn.send("Username does not exist\nUsername:")
         uname = self.conn.recv(1024).decode()
         self.lastActivityTime = time.time()
-        print("[Thread - %d] username recd: %s" % (threading.currentThread().ident, str(uname)))
 
     self.username = uname
 
@@ -99,7 +96,6 @@ def authenticateUser(self):
     password = self.conn.recv(1024).decode()
 
     self.lastActivityTime = time.time()
-    print("[Thread - %d] Password recd: %s" % (threading.currentThread().ident, str(password)))
     
     #Mangae user attempts
     while (userTries[uname] < 3):
@@ -112,7 +108,6 @@ def authenticateUser(self):
             self.conn.send("Invalid Password\nPassword:")
             password = self.conn.recv(1024).decode()
             self.lastActivityTime = time.time()
-            print("[Thread - %d] Password recd: %s" % (threading.currentThread().ident, str(password)))
 
     self.conn.send("Invalid Password. Your account has been blocked. Please try again later\n")
     userBlock[uname] = time.time()
@@ -181,11 +176,9 @@ def whoelsesince(self, givenTime):
         if (clientThread.username != self.username):
             currTime = time.time()
             elapsedTime = currTime - clientThread.loginTime
-            print("{} - {}".format(clientThread.username, elapsedTime))
             if (int(elapsedTime) < int(givenTime) or clientThread.loggedIn == True):  
                 lastOnline.append(clientThread)
-               
-    print(lastOnline)
+            
     return lastOnline
 
 #Method to manage receiving of offlin messages to users when they login again
@@ -261,7 +254,6 @@ def openp2p(self, toUser):
 
     # Start P2PREQUEST a b
     message = "P2PREQUEST {} {}".format(self.username, toUser)
-    print("Sending message: " + message)
     client.conn.send(message.encode())
 
 #Method to accept the P2P connection and send back the designated port as acknowledgement
@@ -278,11 +270,9 @@ def sendback_port(self, fromuser, touser, ip, port):
             client = aClient
             break
     if (client == None):
-        print("User {} not found".format(fromuser))
         return
 
     message = "P2PACCEPTED {} {} {} {}".format(fromuser, touser, ip, port)
-    print("Sending message: " + message)
     client.conn.send(message.encode())
 
 
@@ -297,7 +287,6 @@ def isExists(uname):
 
 #Method called when a thread starts up initially
 def runthread(self):
-    print ("[Thread - %d] New socket thread started from:%s" % (threading.currentThread().ident, str(self.address)))
     try:
         while 1:
             if (self.socketStatus == False):
@@ -370,7 +359,6 @@ def runthread(self):
                 continue
             elif (commands[0] == "P2PPORT"):
                 # P2PPORT b a PORT
-                print(commands)
                 sendback_port(self, commands[1], commands[2], self.address[0], commands[3])
                 continue
             else:
@@ -379,14 +367,11 @@ def runthread(self):
         disconnectUser(self)
     except Exception:
         print ("[Thread - %d] Client thread terminated exceptionally." % (threading.currentThread().ident))
-    print ("[Thread - %d] Client thread terminated." % (threading.currentThread().ident))
 
 #Helper function to print the client list
 def printClientList():
     for clientThread in client_list:
         message = "user: {}, loggedIn: {}".format(clientThread.username, clientThread.loggedIn)
-        print(message)
-
 
 #A class to handle timeout functionality.
 #If a user is inactive for 'TIME_OUT_DURATION' , the server will automatically log them off
@@ -403,7 +388,6 @@ class InactiveUserBooter(Thread):
                 if (clientThread.socketStatus == False):
                     continue
                 elapsedTime = timeNow - clientThread.lastActivityTime
-                # print ("[Thread - %d] InactiveUserBooter thread. Client: %s, Elasped: %d." %(threading.currentThread().ident, getattr(clientThread, 'username', 'NONE'), elapsedTime))
                 if (elapsedTime >= MAX_INACTIVE_TIME_SECONDS):
                     disconnectUser(clientThread)
 
@@ -426,7 +410,6 @@ class Client():
 def server_program():
     # get the hostname
     host = "0.0.0.0"
-    print("Host: " + host)
 
     server_socket = socket(AF_INET, SOCK_STREAM)  # get instance
     server_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
@@ -437,7 +420,6 @@ def server_program():
     while True:
         server_socket.listen(20)
         conn, address = server_socket.accept()  # accept new connection
-        print("Connection from: " + str(address))
         aClient = Client(conn, address)
         threading.Thread(target=runthread, args=(aClient,)).start()
 

@@ -38,12 +38,11 @@ class P2P_Thread(Thread):
 
     def run(self):
         if self.starts_socket:
-            print("Waiting for connection...")
             client_socket, addr = self.my_socket.accept()  # Establish connection with client.
             self.client_socket = client_socket
             self.addr = addr
             self.sending_socket = client_socket
-            # print("Start private messaging with {}".format(self.username))
+            print("Start private messaging with {}".format(self.username))
             eventloop(self.client_socket)
             terminateBoth(self.my_socket, self.client_socket)
         else:
@@ -135,8 +134,6 @@ def client_program():
     client_socket.connect((HOST, port))  # connect to the server
     client_socket.setblocking(False)
 
-    print("Client starting...")
-
     while 1:
         global showPrompt
 
@@ -147,10 +144,12 @@ def client_program():
             if sock == client_socket:
                 data = client_socket.recv(1024).decode()
 
-                print (data),
+                if(not data.startswith("P2PACCEPTED") and not(data.startswith("P2PREQUEST"))):
+                    print (data),
 
                 if (data.encode() == ("Credentials authenticated\n")):
                     # print("prompt set to true")
+                    print("Welcome to the greatest messaging application ever!\n")
                     showPrompt = True
 
                 if (data.startswith("P2PREQUEST")):
@@ -168,7 +167,6 @@ def client_program():
                     aThread.start()
                     # P2PPORT b a 55001
                     message = "P2PPORT {} {} {}".format(fromuser, touser, port)
-                    print("Sending message to server: " + message)
                     client_socket.send(message.encode()) #Send back message to user
 
                 if (data.startswith("P2PACCEPTED")):
@@ -178,13 +176,11 @@ def client_program():
                     ip = data.split()[3]
                     port = data.split()[4]
                     s = socket(AF_INET, SOCK_STREAM)
-                    print("Socket created")
                     aThread = P2P_Thread(s, touser, fromuser, ip, port, False)
                     p2pList.append(aThread)
                     aThread.start()
 
                 if (data.startswith("Bye")):
-                    print("Disconnecting")
                     client_socket.close()
                     #Close all P2P
                     disconnectAllP2P()
