@@ -72,15 +72,21 @@ def eventloop(client_socket):
                     parts = data.split("(")
                     removeuser(parts[0])
                     print("Disconnecting.")
+                    prompt()
+                    client_socket.sendall("BYE".encode())
+                    time.sleep(1)
                     return
 
 
                 prompt()
 
 def terminateBoth(server_socket, client_socket):
-    client_socket.shutdown(1)
-    client_socket.close()
-    server_socket.close()
+    try:
+        client_socket.shutdown(1)
+        client_socket.close()
+        server_socket.close()
+    except Exception as ex:
+        return  # Swallow the exception, silently return.
 
 
 def terminate(client_socket):
@@ -88,7 +94,7 @@ def terminate(client_socket):
         client_socket.shutdown(1)
         client_socket.close()
     except Exception as ex:
-        print ("Client socket already closed")
+        return  #Swallow the exception, silently return.
 
 #Method to handle sending of private messages b/w two peers
 def sendprivatemessage(to, data):
